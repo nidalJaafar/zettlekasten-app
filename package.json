@@ -1,0 +1,12 @@
+{
+  "name": "zettelkasten",
+  "private": true,
+  "scripts": {
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}
