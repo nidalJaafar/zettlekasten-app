@@ -38,9 +38,11 @@ export async function runMigrations(db: Database): Promise<void> {
   await db.execute(SQL_CREATE_SOURCES)
   await db.execute(SQL_CREATE_NOTES)
   await db.execute(SQL_CREATE_NOTE_LINKS)
-  // Safe migration: add processed_at to existing tables that predate this column
-  const cols = await db.query<{ name: string }>(`PRAGMA table_info(notes)`)
-  if (!cols.find((c) => c.name === 'processed_at')) {
+  // Safe migration: add processed_at to existing tables that predate this column.
+  // ALTER TABLE fails with "duplicate column name" if the column already exists — catch and ignore.
+  try {
     await db.execute(`ALTER TABLE notes ADD COLUMN processed_at INTEGER`)
+  } catch (err: unknown) {
+    if (!String(err).includes('duplicate column name')) throw err
   }
 }
