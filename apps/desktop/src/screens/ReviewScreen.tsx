@@ -15,11 +15,13 @@ import LinkPicker from '../components/LinkPicker'
 
 interface Props {
   db: Database
+  pendingNote?: Note | null
+  onNoteConsumed?: () => void
 }
 
 type ReviewStep = 'fleeting-to-literature' | 'literature-to-permanent'
 
-export default function ReviewScreen({ db }: Props) {
+export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props) {
   const [queue, setQueue] = useState<Note[]>([])
   const [current, setCurrent] = useState<Note | null>(null)
   const [step, setStep] = useState<ReviewStep>('fleeting-to-literature')
@@ -51,15 +53,12 @@ export default function ReviewScreen({ db }: Props) {
     setStep(note.type === 'fleeting' ? 'fleeting-to-literature' : 'literature-to-permanent')
   }, [])
 
-  // Listen for process events from Inbox
   useEffect(() => {
-    const handler = (e: Event) => {
-      const note = (e as CustomEvent<Note>).detail
-      selectNote(note)
+    if (pendingNote) {
+      selectNote(pendingNote)
+      onNoteConsumed?.()
     }
-    window.addEventListener('zettel:review', handler)
-    return () => window.removeEventListener('zettel:review', handler)
-  }, [selectNote])
+  }, [pendingNote, selectNote, onNoteConsumed])
 
   async function handlePromoteToLiterature() {
     if (!current) return
