@@ -65,10 +65,12 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
     )
 
     const simulation = d3.forceSimulation<GraphNode>(nodes)
-      .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id((d) => d.id).distance(100))
-      .force('charge', d3.forceManyBody().strength(-200))
+      .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id((d) => d.id).distance(80))
+      .force('charge', d3.forceManyBody().strength(-80))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide<GraphNode>().radius((d) => radiusScale(d.linkCount) + 4))
+      .alphaDecay(0.04)
+      .velocityDecay(0.5)
 
     const link = g.append('g')
       .selectAll('line')
@@ -88,7 +90,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
       .call(
         d3.drag<SVGGElement, GraphNode>()
           .on('start', (event, d) => {
-            if (!event.active) simulation.alphaTarget(0.3).restart()
+            if (!event.active) simulation.alphaTarget(0.1).restart()
             d.fx = d.x; d.fy = d.y
           })
           .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y })
