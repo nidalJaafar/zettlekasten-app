@@ -21,7 +21,7 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
   const [newDesc, setNewDesc] = useState('')
 
   useEffect(() => {
-    db.query<Source>(`SELECT id, type, label, description, created_at FROM sources WHERE deleted_at IS NULL ORDER BY created_at DESC`)
+    db.query<Source>(`SELECT id, type, label, description, created_at FROM sources ORDER BY created_at DESC`)
       .then(setSources)
   }, [db])
 

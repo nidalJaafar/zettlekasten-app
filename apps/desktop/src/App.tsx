@@ -21,6 +21,20 @@ export default function App() {
     })
   }, [])
 
+  useEffect(() => {
+    const handleNewLiterature = () => setScreen('review')
+    const handleNewPermanent = () => setScreen('review')
+    const handleOpenNote = () => setScreen('review')
+    window.addEventListener('zettel:new-literature', handleNewLiterature)
+    window.addEventListener('zettel:new-permanent', handleNewPermanent)
+    window.addEventListener('zettel:open-note', handleOpenNote)
+    return () => {
+      window.removeEventListener('zettel:new-literature', handleNewLiterature)
+      window.removeEventListener('zettel:new-permanent', handleNewPermanent)
+      window.removeEventListener('zettel:open-note', handleOpenNote)
+    }
+  }, [])
+
   if (!db) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#7f8fa6' }}>
