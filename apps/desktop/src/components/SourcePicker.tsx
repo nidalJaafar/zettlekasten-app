@@ -87,6 +87,13 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
         </>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <input
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Label (e.g. Thinking, Fast and Slow)"
+            style={inputStyle}
+            autoFocus
+          />
           <select
             value={newType}
             onChange={(e) => setNewType(e.target.value as SourceType)}
@@ -96,13 +103,23 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
               <option key={t} value={t}>{ICONS[t]} {t}</option>
             ))}
           </select>
-          <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Label (e.g. Thinking, Fast and Slow)" style={inputStyle} />
-          <input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Description (optional)" style={inputStyle} />
+          <input
+            value={newDesc}
+            onChange={(e) => setNewDesc(e.target.value)}
+            placeholder="Description (optional)"
+            style={inputStyle}
+          />
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={handleCreate} style={{ flex: 1, background: '#6c63ff', color: 'white', border: 'none', borderRadius: 6, padding: '7px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            <button
+              onClick={handleCreate}
+              style={{ flex: 1, background: '#6c63ff', color: 'white', border: 'none', borderRadius: 6, padding: '7px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >
               Create source
             </button>
-            <button onClick={() => setCreating(false)} style={{ background: '#22223a', color: '#7f8fa6', border: '1px solid #3d3d6b', borderRadius: 6, padding: '7px 12px', fontSize: 12, cursor: 'pointer' }}>
+            <button
+              onClick={() => setCreating(false)}
+              style={{ background: '#22223a', color: '#7f8fa6', border: '1px solid #3d3d6b', borderRadius: 6, padding: '7px 12px', fontSize: 12, cursor: 'pointer' }}
+            >
               Cancel
             </button>
           </div>
