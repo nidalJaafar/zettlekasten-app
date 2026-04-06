@@ -57,6 +57,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
     const g = svg.append('g')
 
     // Zoom/pan
+    svg.on('.zoom', null)  // Remove any previously registered zoom handlers
     svg.call(
       d3.zoom<SVGSVGElement, unknown>()
         .scaleExtent([0.2, 4])
@@ -147,7 +148,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
     })
 
     return () => { simulation.stop() }
-  }, [notes, links])
+  }, [notes, links, onNodeClick])
 
   return <svg ref={svgRef} width="100%" height="100%" style={{ background: '#0a0a18' }} />
 }

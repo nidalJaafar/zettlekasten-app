@@ -12,11 +12,13 @@ export default function GraphScreen({ db }: Props) {
   const [links, setLinks] = useState<NoteLink[]>([])
   const [selected, setSelected] = useState<Note | null>(null)
   const [query, setQuery] = useState('')
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     Promise.all([getNotesByType(db, 'permanent'), getAllLinks(db)]).then(([n, l]) => {
       setNotes(n)
       setLinks(l)
+      setLoaded(true)
     })
   }, [db])
 
@@ -24,6 +26,7 @@ export default function GraphScreen({ db }: Props) {
     ? notes.filter((n) => n.title.toLowerCase().includes(query.toLowerCase()))
     : notes
 
+  if (!loaded) return null
   if (notes.length === 0) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#555', fontSize: 14, background: '#0a0a18' }}>
