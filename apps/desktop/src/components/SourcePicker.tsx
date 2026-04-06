@@ -133,7 +133,7 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
               style={{
                 flex: 1,
                 background: ACCENT.gold,
-                color: '#0b0b10',
+                color: BG.base,
                 border: 'none',
                 borderRadius: 5,
                 padding: '8px 0',

@@ -361,7 +361,7 @@ function actionButtonStyle(active: boolean): React.CSSProperties {
     fontWeight: 600,
     cursor: active ? 'pointer' : 'default',
     background: active ? ACCENT.gold : BG.hover,
-    color: active ? '#0b0b10' : TEXT.muted,
+    color: active ? BG.base : TEXT.muted,
     letterSpacing: '0.07em',
     textTransform: 'uppercase',
   }
