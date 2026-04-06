@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { getNotesByType, createNote } from '@zettelkasten/core'
 import type { Database, Note } from '@zettelkasten/core'
 import NoteCard from '../components/NoteCard'
+import { BG, TEXT, ACCENT, BORDER } from '../theme'
 
 interface Props {
   db: Database
@@ -46,42 +47,46 @@ export default function InboxScreen({ db, onCountChange }: Props) {
 
   async function handleCreateLiterature() {
     setShowDropdown(false)
-    const event = new CustomEvent('zettel:new-literature')
-    window.dispatchEvent(event)
+    window.dispatchEvent(new CustomEvent('zettel:new-literature'))
   }
 
   async function handleCreatePermanent() {
     setShowDropdown(false)
-    const event = new CustomEvent('zettel:new-permanent')
-    window.dispatchEvent(event)
+    window.dispatchEvent(new CustomEvent('zettel:new-permanent'))
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#1a1a2e' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: BG.base }}>
       {/* Header */}
       <div style={{
-        padding: '16px 20px 12px',
-        borderBottom: '1px solid #2a2a4a',
+        padding: '18px 24px 14px',
+        borderBottom: `1px solid ${BORDER.dim}`,
         display: 'flex',
         alignItems: 'center',
         gap: 12,
       }}>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#e0e0ff' }}>Inbox</div>
-          <div style={{ fontSize: 12, color: '#7f8fa6' }}>{notes.length} fleeting notes to process</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: TEXT.primary, letterSpacing: '0.01em' }}>
+            Inbox
+          </div>
+          <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 2, letterSpacing: '0.01em' }}>
+            {notes.length} fleeting note{notes.length !== 1 ? 's' : ''} to process
+          </div>
         </div>
         <div ref={dropdownContainerRef} style={{ marginLeft: 'auto', position: 'relative' }}>
           <button
             onClick={() => setShowDropdown(!showDropdown)}
+            className="btn-new"
             style={{
-              background: '#6c63ff',
-              color: 'white',
-              border: 'none',
-              borderRadius: 6,
-              padding: '7px 14px',
+              background: 'transparent',
+              color: TEXT.dim,
+              border: `1px solid ${BORDER.base}`,
+              borderRadius: 5,
+              padding: '6px 14px',
               fontSize: 12,
-              fontWeight: 600,
+              fontWeight: 400,
               cursor: 'pointer',
+              letterSpacing: '0.02em',
             }}
           >
             + New ▾
@@ -91,17 +96,18 @@ export default function InboxScreen({ db, onCountChange }: Props) {
               position: 'absolute',
               right: 0,
               top: '110%',
-              background: '#22223a',
-              border: '1px solid #3d3d6b',
-              borderRadius: 8,
+              background: BG.surface,
+              border: `1px solid ${BORDER.base}`,
+              borderRadius: 6,
               padding: 4,
               zIndex: 100,
               minWidth: 180,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
             }}>
-              <button onClick={handleCreateLiterature} style={dropdownItemStyle}>
+              <button onClick={handleCreateLiterature} className="dropdown-item" style={dropdownItemStyle}>
                 Literature note
               </button>
-              <button onClick={handleCreatePermanent} style={dropdownItemStyle}>
+              <button onClick={handleCreatePermanent} className="dropdown-item" style={dropdownItemStyle}>
                 Permanent note
               </button>
             </div>
@@ -110,30 +116,44 @@ export default function InboxScreen({ db, onCountChange }: Props) {
       </div>
 
       {/* Quick capture */}
-      <div style={{ padding: '12px 20px', borderBottom: '1px solid #2a2a4a' }}>
+      <div style={{ padding: '14px 24px', borderBottom: `1px solid ${BORDER.dim}` }}>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleCapture()}
-          placeholder="Capture a fleeting thought... (Enter to save)"
+          placeholder="Capture a fleeting thought… (Enter to save)"
           style={{
             width: '100%',
-            background: '#22223a',
-            border: '1px solid #3d3d6b',
-            borderRadius: 6,
-            padding: '8px 12px',
-            color: '#e0e0ff',
+            background: 'transparent',
+            border: 'none',
+            borderBottom: `1px solid ${BORDER.base}`,
+            color: TEXT.primary,
             fontSize: 13,
+            padding: '6px 0',
             outline: 'none',
+            letterSpacing: '0.01em',
           }}
         />
       </div>
 
       {/* Notes list */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '14px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}>
         {notes.length === 0 ? (
-          <div style={{ color: '#555', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
-            No fleeting notes. Capture something above.
+          <div style={{
+            color: TEXT.muted,
+            fontSize: 13,
+            textAlign: 'center',
+            marginTop: 48,
+            letterSpacing: '0.01em',
+          }}>
+            Nothing in the inbox. Capture a thought above.
           </div>
         ) : (
           notes.map((note) => (
@@ -151,9 +171,10 @@ const dropdownItemStyle: React.CSSProperties = {
   padding: '8px 12px',
   background: 'transparent',
   border: 'none',
-  color: '#b0b0cc',
-  fontSize: 13,
+  color: TEXT.dim,
+  fontSize: 12,
   textAlign: 'left',
   cursor: 'pointer',
   borderRadius: 4,
+  letterSpacing: '0.02em',
 }

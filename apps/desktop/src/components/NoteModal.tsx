@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getAllLinks, getNotesByType } from '@zettelkasten/core'
 import type { Database, Note, NoteLink } from '@zettelkasten/core'
+import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface Props {
   db: Database
@@ -30,63 +31,107 @@ export default function NoteModal({ db, note, onClose }: Props) {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.65)',
+        background: 'rgba(0, 0, 0, 0.72)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
+        backdropFilter: 'blur(2px)',
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#1a1a2e',
-          border: '1px solid #3d3d6b',
-          borderRadius: 12,
-          padding: 28,
-          width: 520,
+          background: BG.card,
+          border: `1px solid ${BORDER.hi}`,
+          borderRadius: 10,
+          padding: '28px 32px',
+          width: 540,
           maxWidth: '90vw',
           maxHeight: '80vh',
           overflowY: 'auto',
           position: 'relative',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)',
         }}
       >
+        {/* Close button */}
         <button
           onClick={onClose}
           style={{
             position: 'absolute',
-            top: 14,
-            right: 14,
+            top: 16,
+            right: 16,
             background: 'transparent',
             border: 'none',
-            color: '#555',
-            fontSize: 18,
+            color: TEXT.muted,
+            fontSize: 16,
             cursor: 'pointer',
             lineHeight: 1,
+            padding: 4,
           }}
         >
           ✕
         </button>
 
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#6c63ff', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+        {/* Type label */}
+        <div style={{
+          fontSize: 10,
+          fontWeight: 600,
+          color: ACCENT.gold,
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          marginBottom: 10,
+        }}>
           Permanent note
         </div>
-        <div style={{ fontSize: 20, fontWeight: 700, color: '#e0e0ff', marginBottom: 16, paddingRight: 24 }}>
+
+        {/* Title */}
+        <div style={{
+          fontFamily: FONT.serif,
+          fontSize: 22,
+          fontWeight: 600,
+          color: TEXT.primary,
+          marginBottom: 18,
+          paddingRight: 24,
+          lineHeight: 1.3,
+          letterSpacing: '0.005em',
+        }}>
           {note.title}
         </div>
 
+        {/* Content */}
         {note.content ? (
-          <div style={{ fontSize: 13, color: '#b0b0cc', lineHeight: 1.75, marginBottom: 24, whiteSpace: 'pre-wrap' }}>
+          <div style={{
+            fontFamily: FONT.mono,
+            fontSize: 13,
+            color: TEXT.dim,
+            lineHeight: 1.75,
+            marginBottom: 24,
+            whiteSpace: 'pre-wrap',
+          }}>
             {note.content}
           </div>
         ) : (
-          <div style={{ fontSize: 13, color: '#555', fontStyle: 'italic', marginBottom: 24 }}>
+          <div style={{
+            fontSize: 13,
+            color: TEXT.muted,
+            fontStyle: 'italic',
+            marginBottom: 24,
+          }}>
             No content.
           </div>
         )}
 
-        <div style={{ borderTop: '1px solid #2a2a4a', paddingTop: 16 }}>
-          <div style={{ fontSize: 11, color: '#7f8fa6', marginBottom: 8 }}>
+        {/* Connections */}
+        <div style={{ borderTop: `1px solid ${BORDER.dim}`, paddingTop: 16 }}>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: TEXT.muted,
+            textTransform: 'uppercase',
+            letterSpacing: '0.10em',
+            marginBottom: 10,
+          }}>
             {noteLinks.length} connection{noteLinks.length !== 1 ? 's' : ''}
           </div>
           {linkedNotes.length > 0 && (
@@ -95,12 +140,14 @@ export default function NoteModal({ db, note, onClose }: Props) {
                 <div
                   key={n.id}
                   style={{
-                    fontSize: 12,
-                    color: '#7f8fa6',
-                    padding: '5px 10px',
-                    background: '#22223a',
-                    borderRadius: 5,
-                    border: '1px solid #3d3d6b',
+                    fontFamily: FONT.serif,
+                    fontSize: 14,
+                    color: TEXT.dim,
+                    padding: '6px 10px',
+                    background: BG.hover,
+                    borderRadius: 4,
+                    border: `1px solid ${BORDER.base}`,
+                    lineHeight: 1.3,
                   }}
                 >
                   {n.title}

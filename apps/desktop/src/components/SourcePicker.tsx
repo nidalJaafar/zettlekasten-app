@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Database, Source, SourceType } from '@zettelkasten/core'
+import { BG, TEXT, ACCENT, BORDER } from '../theme'
 
 interface Props {
   db: Database
@@ -61,27 +62,44 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search sources..."
+            placeholder="Search sources…"
             style={inputStyle}
           />
-          <div style={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
-            {filtered.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => onSelect(s.id)}
-                style={{
-                  ...sourceRowStyle,
-                  background: s.id === selectedId ? '#6c63ff22' : '#22223a',
-                  border: `1px solid ${s.id === selectedId ? '#6c63ff' : '#3d3d6b'}`,
-                }}
-              >
-                <span>{ICONS[s.type]}</span>
-                <span style={{ flex: 1, textAlign: 'left', fontSize: 12, color: '#e0e0ff' }}>{s.label}</span>
-                {s.id === selectedId && <span style={{ color: '#6c63ff', fontSize: 12 }}>✓</span>}
-              </button>
-            ))}
+          <div style={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3, marginTop: 6 }}>
+            {filtered.map((s) => {
+              const selected = s.id === selectedId
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => onSelect(s.id)}
+                  className="source-row"
+                  style={{
+                    ...rowStyle,
+                    background: selected ? ACCENT.goldDim : BG.card,
+                    borderColor: selected ? ACCENT.gold : BORDER.base,
+                  }}
+                >
+                  <span style={{ fontSize: 12 }}>{ICONS[s.type]}</span>
+                  <span style={{ flex: 1, textAlign: 'left', fontSize: 12, color: selected ? TEXT.primary : TEXT.dim }}>
+                    {s.label}
+                  </span>
+                  {selected && <span style={{ fontSize: 11, color: ACCENT.gold }}>✓</span>}
+                </button>
+              )
+            })}
           </div>
-          <button onClick={() => setCreating(true)} style={{ ...sourceRowStyle, marginTop: 6, background: '#1a1a2e', border: '1px dashed #3d3d6b', color: '#555', fontSize: 12 }}>
+          <button
+            onClick={() => setCreating(true)}
+            className="add-source-btn"
+            style={{
+              ...rowStyle,
+              marginTop: 6,
+              background: 'transparent',
+              border: `1px dashed ${BORDER.base}`,
+              color: TEXT.muted,
+              fontSize: 12,
+            }}
+          >
             + Add new source
           </button>
         </>
@@ -112,13 +130,33 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={handleCreate}
-              style={{ flex: 1, background: '#6c63ff', color: 'white', border: 'none', borderRadius: 6, padding: '7px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              style={{
+                flex: 1,
+                background: ACCENT.gold,
+                color: '#0b0b10',
+                border: 'none',
+                borderRadius: 5,
+                padding: '8px 0',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                letterSpacing: '0.03em',
+              }}
             >
               Create source
             </button>
             <button
               onClick={() => setCreating(false)}
-              style={{ background: '#22223a', color: '#7f8fa6', border: '1px solid #3d3d6b', borderRadius: 6, padding: '7px 12px', fontSize: 12, cursor: 'pointer' }}
+              className="btn-ghost"
+              style={{
+                background: BG.card,
+                color: TEXT.dim,
+                border: `1px solid ${BORDER.base}`,
+                borderRadius: 5,
+                padding: '8px 14px',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
             >
               Cancel
             </button>
@@ -131,22 +169,23 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: '#22223a',
-  border: '1px solid #3d3d6b',
-  borderRadius: 6,
-  padding: '7px 10px',
-  color: '#e0e0ff',
+  background: BG.card,
+  border: `1px solid ${BORDER.base}`,
+  borderRadius: 5,
+  padding: '8px 10px',
+  color: TEXT.primary,
   fontSize: 12,
   outline: 'none',
 }
 
-const sourceRowStyle: React.CSSProperties = {
+const rowStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 8,
   padding: '7px 10px',
-  borderRadius: 6,
-  border: '1px solid #3d3d6b',
+  borderRadius: 5,
+  border: `1px solid ${BORDER.base}`,
   cursor: 'pointer',
   width: '100%',
+  background: BG.card,
 }

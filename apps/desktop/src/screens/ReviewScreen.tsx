@@ -12,6 +12,7 @@ import type { Database, Note } from '@zettelkasten/core'
 import MarkdownEditor from '../components/MarkdownEditor'
 import SourcePicker from '../components/SourcePicker'
 import LinkPicker from '../components/LinkPicker'
+import { BG, TEXT, ACCENT, FONT, BORDER, typeColor } from '../theme'
 
 interface Props {
   db: Database
@@ -20,6 +21,8 @@ interface Props {
 }
 
 type ReviewStep = 'fleeting-to-literature' | 'literature-to-permanent'
+
+const STEP_ORDER = ['fleeting', 'literature', 'permanent'] as const
 
 export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props) {
   const [queue, setQueue] = useState<Note[]>([])
@@ -64,7 +67,7 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
     if (!current) return
     const check = canPromoteToLiterature({ ...current, source_id: sourceId })
     if (!check.ok) { setBlockReason(check.reason); return }
-    if (!sourceId) return  // canPromoteToLiterature already blocks this, but be explicit
+    if (!sourceId) return
     await updateNote(db, current.id, { type: 'literature', title, content, source_id: sourceId })
     const updated = { ...current, type: 'literature' as const, title, content, source_id: sourceId }
     setCurrent(updated)
@@ -82,12 +85,7 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
     )
     if (!check.ok) { setBlockReason(check.reason); return }
 
-    // Create new permanent note, preserve literature note
-    const permanent = await createNote(db, {
-      type: 'permanent',
-      title,
-      content,
-    })
+    const permanent = await createNote(db, { type: 'permanent', title, content })
     await updateNote(db, permanent.id, { own_words_confirmed: 1 })
     for (const id of linkedIds) {
       await addLink(db, permanent.id, id)
@@ -105,84 +103,142 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
     )
   }
 
+  // Empty state
   if (queue.length === 0 && !current) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#555', fontSize: 14 }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        color: TEXT.muted,
+        fontSize: 13,
+        background: BG.base,
+        letterSpacing: '0.01em',
+      }}>
         Queue is empty. Capture some fleeting notes first.
       </div>
     )
   }
 
+  // Queue list view
   if (!current) {
     return (
-      <div style={{ padding: 24, background: '#1a1a2e', height: '100%' }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#e0e0ff', marginBottom: 16 }}>
-          Review Queue ({queue.length})
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {queue.map((note) => (
-            <button
-              key={note.id}
-              onClick={() => selectNote(note)}
-              style={{
-                background: '#22223a',
-                border: '1px solid #3d3d6b',
-                borderRadius: 8,
-                padding: '12px 14px',
-                textAlign: 'left',
-                cursor: 'pointer',
-                color: '#e0e0ff',
-              }}
-            >
-              <span style={{
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '2px 6px',
-                borderRadius: 4,
-                background: note.type === 'fleeting' ? '#ffd32a22' : '#6c63ff22',
-                color: note.type === 'fleeting' ? '#ffd32a' : '#6c63ff',
-                marginRight: 8,
-                textTransform: 'uppercase',
-              }}>
-                {note.type}
-              </span>
-              {note.title}
-            </button>
-          ))}
+      <div style={{ height: '100%', background: BG.base, overflowY: 'auto' }}>
+        <div style={{ padding: '24px 28px' }}>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: TEXT.muted,
+            textTransform: 'uppercase',
+            letterSpacing: '0.10em',
+            marginBottom: 20,
+          }}>
+            Review Queue — {queue.length}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {queue.map((note) => (
+              <button
+                key={note.id}
+                onClick={() => selectNote(note)}
+                className="queue-item"
+                style={{
+                  background: BG.card,
+                  border: `1px solid ${BORDER.base}`,
+                  borderLeft: `3px solid ${typeColor(note.type)}`,
+                  borderRadius: 5,
+                  padding: '11px 14px 11px 12px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <span style={{
+                  fontFamily: FONT.serif,
+                  fontSize: 15,
+                  color: TEXT.primary,
+                  flex: 1,
+                  lineHeight: 1.35,
+                  letterSpacing: '0.005em',
+                }}>
+                  {note.title}
+                </span>
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  color: typeColor(note.type),
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  flexShrink: 0,
+                }}>
+                  {note.type}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
+  // Editor view
   return (
-    <div style={{ padding: 24, background: '#1a1a2e', height: '100%', overflowY: 'auto' }}>
+    <div style={{ padding: '24px 28px', background: BG.base, height: '100%', overflowY: 'auto' }}>
       {/* Step indicator */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-        {(['fleeting', 'literature', 'permanent'] as const).map((s, i) => (
-          <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {i > 0 && <div style={{ width: 24, height: 1, background: '#3d3d6b' }} />}
-            <div style={{
-              padding: '4px 12px',
-              borderRadius: 12,
-              fontSize: 12,
-              fontWeight: 600,
-              background: current.type === s ? '#6c63ff22' : 'transparent',
-              color: current.type === s ? '#6c63ff' : '#555',
-              border: `1px solid ${current.type === s ? '#6c63ff' : '#2a2a4a'}`,
-            }}>
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 28 }}>
+        {STEP_ORDER.map((s, i) => {
+          const active = current.type === s
+          const isDone = STEP_ORDER.indexOf(current.type) > i
+          const stepTypeColors = { fleeting: ACCENT.amber, literature: ACCENT.blue, permanent: ACCENT.violet }
+          return (
+            <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              {i > 0 && (
+                <div style={{
+                  width: 20,
+                  height: 1,
+                  background: isDone ? TEXT.dim : BORDER.base,
+                  margin: '0 6px',
+                }} />
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: active ? stepTypeColors[s] : isDone ? TEXT.dim : BORDER.hi,
+                }} />
+                <span style={{
+                  fontSize: 10,
+                  color: active ? stepTypeColors[s] : TEXT.muted,
+                  fontWeight: active ? 600 : 400,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}>
+                  {s}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
         <button
           onClick={() => setCurrent(null)}
-          style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: 12 }}
+          style={{
+            marginLeft: 'auto',
+            background: 'transparent',
+            border: 'none',
+            color: TEXT.muted,
+            cursor: 'pointer',
+            fontSize: 11,
+            letterSpacing: '0.03em',
+          }}
         >
-          ← Back to queue
+          ← queue
         </button>
       </div>
 
-      {/* Note editor */}
+      {/* Title */}
       <div style={{ marginBottom: 16 }}>
         <input
           value={title}
@@ -191,71 +247,104 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
             width: '100%',
             background: 'transparent',
             border: 'none',
-            borderBottom: '1px solid #3d3d6b',
-            color: '#e0e0ff',
-            fontSize: 18,
-            fontWeight: 700,
-            padding: '4px 0',
-            marginBottom: 12,
+            borderBottom: `1px solid ${BORDER.base}`,
+            color: TEXT.primary,
+            fontFamily: FONT.serif,
+            fontSize: 22,
+            fontWeight: 500,
+            padding: '4px 0 10px',
+            marginBottom: 16,
             outline: 'none',
+            letterSpacing: '0.01em',
+            lineHeight: 1.3,
           }}
         />
         <MarkdownEditor value={content} onChange={setContent} minHeight="140px" />
       </div>
 
-      {/* Step-specific gates */}
+      {/* Source section */}
       {step === 'fleeting-to-literature' && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#7f8fa6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-            Attach a source <span style={{ color: '#ff6b81' }}>*required</span>
+        <div style={{ marginBottom: 20 }}>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: TEXT.muted,
+            textTransform: 'uppercase',
+            letterSpacing: '0.10em',
+            marginBottom: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            Source
+            <span style={{ color: ACCENT.red, fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
+              *required
+            </span>
           </div>
           <SourcePicker db={db} selectedId={sourceId} onSelect={setSourceId} />
         </div>
       )}
 
+      {/* Link section */}
       {step === 'literature-to-permanent' && (
         <>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={ownWords}
                 onChange={(e) => setOwnWords(e.target.checked)}
-                style={{ width: 16, height: 16, accentColor: '#2ed573' }}
+                style={{ width: 14, height: 14, accentColor: ACCENT.green }}
               />
-              <span style={{ fontSize: 13, color: '#b0b0cc' }}>I wrote this in my own words</span>
+              <span style={{ fontSize: 12, color: TEXT.dim }}>Written in my own words</span>
             </label>
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#7f8fa6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-              Link to permanent notes <span style={{ color: '#ff6b81' }}>*required</span>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: TEXT.muted,
+              textTransform: 'uppercase',
+              letterSpacing: '0.10em',
+              marginBottom: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              Link to permanent notes
+              <span style={{ color: ACCENT.red, fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
+                *required
+              </span>
             </div>
             <LinkPicker db={db} selectedIds={linkedIds} onToggle={toggleLink} />
           </div>
         </>
       )}
 
-      {/* Error message */}
+      {/* Error */}
       {blockReason && (
-        <div style={{ marginBottom: 12, padding: '8px 12px', background: '#ff6b8122', border: '1px solid #ff6b8155', borderRadius: 6, fontSize: 12, color: '#ff6b81' }}>
+        <div style={{
+          marginBottom: 14,
+          padding: '9px 12px',
+          background: 'rgba(184,85,85,0.10)',
+          border: `1px solid rgba(184,85,85,0.25)`,
+          borderRadius: 5,
+          fontSize: 12,
+          color: ACCENT.red,
+          letterSpacing: '0.01em',
+        }}>
           {blockReason}
         </div>
       )}
 
-      {/* Action button */}
+      {/* Action */}
       {step === 'fleeting-to-literature' ? (
-        <button
-          onClick={handlePromoteToLiterature}
-          style={actionButtonStyle(!!sourceId)}
-        >
-          Promote to Literature →
+        <button onClick={handlePromoteToLiterature} style={actionButtonStyle(!!sourceId)}>
+          Promote to Literature
         </button>
       ) : (
-        <button
-          onClick={handleSavePermanent}
-          style={actionButtonStyle(ownWords && linkedIds.length > 0)}
-        >
-          Save as Permanent note ✓
+        <button onClick={handleSavePermanent} style={actionButtonStyle(ownWords && linkedIds.length > 0)}>
+          Save as Permanent Note
         </button>
       )}
     </div>
@@ -267,12 +356,13 @@ function actionButtonStyle(active: boolean): React.CSSProperties {
     width: '100%',
     padding: '12px',
     border: 'none',
-    borderRadius: 8,
-    fontSize: 13,
-    fontWeight: 700,
+    borderRadius: 6,
+    fontSize: 11,
+    fontWeight: 600,
     cursor: active ? 'pointer' : 'default',
-    background: active ? '#2ed573' : '#2a2a4a',
-    color: active ? '#1a1a2e' : '#555',
-    transition: 'background 0.2s',
+    background: active ? ACCENT.gold : BG.hover,
+    color: active ? '#0b0b10' : TEXT.muted,
+    letterSpacing: '0.07em',
+    textTransform: 'uppercase',
   }
 }

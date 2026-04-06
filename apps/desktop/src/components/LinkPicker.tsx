@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getNotesByType } from '@zettelkasten/core'
 import type { Database, Note } from '@zettelkasten/core'
+import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface Props {
   db: Database
@@ -27,8 +28,14 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
   if (!loaded) return null
   if (notes.length === 0) {
     return (
-      <div style={{ fontSize: 12, color: '#555', fontStyle: 'italic', padding: '8px 0' }}>
-        No permanent notes yet — link requirement waived (bootstrap mode).
+      <div style={{
+        fontSize: 12,
+        color: TEXT.muted,
+        fontStyle: 'italic',
+        padding: '8px 0',
+        letterSpacing: '0.01em',
+      }}>
+        No permanent notes yet — link requirement waived for first note.
       </div>
     )
   }
@@ -38,14 +45,14 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search permanent notes..."
+        placeholder="Search permanent notes…"
         style={{
           width: '100%',
-          background: '#22223a',
-          border: '1px solid #3d3d6b',
-          borderRadius: 6,
-          padding: '7px 10px',
-          color: '#e0e0ff',
+          background: BG.card,
+          border: `1px solid ${BORDER.base}`,
+          borderRadius: 5,
+          padding: '8px 10px',
+          color: TEXT.primary,
           fontSize: 12,
           outline: 'none',
           marginBottom: 6,
@@ -58,23 +65,35 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
             <button
               key={note.id}
               onClick={() => onToggle(note.id)}
+              className="picker-row"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
                 padding: '7px 10px',
-                borderRadius: 6,
-                border: `1px solid ${selected ? '#6c63ff' : '#3d3d6b'}`,
-                background: selected ? '#6c63ff22' : '#22223a',
+                borderRadius: 5,
+                border: `1px solid ${selected ? ACCENT.violet : BORDER.base}`,
+                background: selected ? 'rgba(112,96,168,0.10)' : BG.card,
                 cursor: 'pointer',
                 width: '100%',
                 textAlign: 'left',
               }}
             >
-              <span style={{ fontSize: 11, color: selected ? '#6c63ff' : '#555' }}>
-                {selected ? '✓' : '○'}
+              <span style={{
+                fontSize: 10,
+                color: selected ? ACCENT.violet : TEXT.muted,
+                flexShrink: 0,
+              }}>
+                {selected ? '◆' : '◇'}
               </span>
-              <span style={{ fontSize: 12, color: '#e0e0ff' }}>{note.title}</span>
+              <span style={{
+                fontFamily: FONT.serif,
+                fontSize: 14,
+                color: selected ? TEXT.primary : TEXT.dim,
+                lineHeight: 1.3,
+              }}>
+                {note.title}
+              </span>
             </button>
           )
         })}

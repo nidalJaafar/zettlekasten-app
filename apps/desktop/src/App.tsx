@@ -54,7 +54,7 @@ export default function App() {
 
   if (dbError) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#ff6b81', fontSize: 13, padding: 24, textAlign: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#b85555', fontSize: 12, padding: 24, textAlign: 'center', background: '#0b0b10', letterSpacing: '0.01em' }}>
         Database error: {dbError}
       </div>
     )
@@ -62,8 +62,8 @@ export default function App() {
 
   if (!db) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#7f8fa6' }}>
-        Loading...
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#45423e', background: '#0b0b10', fontSize: 12, letterSpacing: '0.05em' }}>
+        Loading…
       </div>
     )
   }

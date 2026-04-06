@@ -77,9 +77,9 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
       .data(edges)
       .enter()
       .append('line')
-      .attr('stroke', '#6c63ff')
-      .attr('stroke-opacity', 0.4)
-      .attr('stroke-width', 1.5)
+      .attr('stroke', '#363652')
+      .attr('stroke-opacity', 0.6)
+      .attr('stroke-width', 1)
 
     const node = g.append('g')
       .selectAll('g')
@@ -102,16 +102,15 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
 
     node.append('circle')
       .attr('r', (d) => radiusScale(d.linkCount))
-      .attr('fill', '#6c63ff')
-      .attr('fill-opacity', 0.85)
-      .attr('stroke', '#a29bfe')
-      .attr('stroke-width', 1.5)
+      .attr('fill', '#252540')
+      .attr('stroke', '#4a4a80')
+      .attr('stroke-width', 1)
 
     node.append('text')
-      .attr('dy', (d) => radiusScale(d.linkCount) + 12)
+      .attr('dy', (d) => radiusScale(d.linkCount) + 13)
       .attr('text-anchor', 'middle')
       .attr('font-size', 10)
-      .attr('fill', '#b0b0cc')
+      .attr('fill', '#55504a')
       .text((d) => d.title.length > 24 ? d.title.slice(0, 24) + '…' : d.title)
 
     node.on('click', (_, d) => {
@@ -131,7 +130,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
       link.attr('stroke-opacity', (e) => {
         const s = typeof e.source === 'string' ? e.source : (e.source as GraphNode).id
         const t = typeof e.target === 'string' ? e.target : (e.target as GraphNode).id
-        return connected.has(s) && connected.has(t) ? 0.8 : 0.05
+        return connected.has(s) && connected.has(t) ? 0.9 : 0.04
       })
     })
 
@@ -152,5 +151,5 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
     return () => { simulation.stop() }
   }, [notes, links, onNodeClick])
 
-  return <svg ref={svgRef} width="100%" height="100%" style={{ background: '#0a0a18' }} />
+  return <svg ref={svgRef} width="100%" height="100%" style={{ background: '#0b0b10' }} />
 }

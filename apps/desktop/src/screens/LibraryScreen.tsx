@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Database, Note } from '@zettelkasten/core'
+import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface LibraryNote extends Note {
   source_label: string | null
@@ -28,58 +29,100 @@ export default function LibraryScreen({ db }: Props) {
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#1a1a2e' }}>
-      <div style={{ padding: '16px 20px 12px', borderBottom: '1px solid #2a2a4a' }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: '#e0e0ff' }}>Library</div>
-        <div style={{ fontSize: 12, color: '#7f8fa6' }}>{notes.length} processed notes</div>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: BG.base }}>
+      {/* Header */}
+      <div style={{ padding: '18px 24px 14px', borderBottom: `1px solid ${BORDER.dim}` }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: TEXT.primary, letterSpacing: '0.01em' }}>
+          Library
+        </div>
+        <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 2, letterSpacing: '0.01em' }}>
+          {notes.length} processed note{notes.length !== 1 ? 's' : ''}
+        </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+      {/* List */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '14px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+      }}>
         {notes.length === 0 ? (
-          <div style={{ color: '#555', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
+          <div style={{
+            color: TEXT.muted,
+            fontSize: 13,
+            textAlign: 'center',
+            marginTop: 48,
+            letterSpacing: '0.01em',
+          }}>
             No processed notes yet. Complete a review cycle to see notes here.
           </div>
         ) : (
-          notes.map((note) => (
-            <div
-              key={note.id}
-              style={{ background: '#22223a', border: '1px solid #3d3d6b', borderRadius: 8, overflow: 'hidden' }}
-            >
-              <button
-                onClick={() => setExpandedId(expandedId === note.id ? null : note.id)}
+          notes.map((note) => {
+            const expanded = expandedId === note.id
+            return (
+              <div
+                key={note.id}
+                className="library-card"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '12px 14px',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  width: '100%',
-                  textAlign: 'left',
+                  background: BG.card,
+                  border: `1px solid ${BORDER.base}`,
+                  borderLeft: `3px solid ${ACCENT.blue}`,
+                  borderRadius: 5,
+                  overflow: 'hidden',
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0ff' }}>{note.title}</div>
-                  <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
-                    {note.source_label ?? 'No source'} · {formatDate(note.processed_at!)}
+                <button
+                  onClick={() => setExpandedId(expanded ? null : note.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '11px 14px 11px 12px',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    width: '100%',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontFamily: FONT.serif,
+                      fontSize: 15,
+                      fontWeight: 500,
+                      color: TEXT.primary,
+                      lineHeight: 1.35,
+                      letterSpacing: '0.005em',
+                    }}>
+                      {note.title}
+                    </div>
+                    <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 3, letterSpacing: '0.01em' }}>
+                      {note.source_label ?? 'No source'} · {formatDate(note.processed_at!)}
+                    </div>
                   </div>
-                </div>
-                <span style={{ color: '#555', fontSize: 11 }}>{expandedId === note.id ? '▲' : '▼'}</span>
-              </button>
-              {expandedId === note.id && (
-                <div style={{
-                  padding: '10px 14px 12px',
-                  fontSize: 12,
-                  color: '#7f8fa6',
-                  lineHeight: 1.6,
-                  borderTop: '1px solid #2a2a4a',
-                  whiteSpace: 'pre-wrap',
-                }}>
-                  {note.content || <span style={{ fontStyle: 'italic' }}>No content.</span>}
-                </div>
-              )}
-            </div>
-          ))
+                  <span style={{ color: TEXT.muted, fontSize: 10, flexShrink: 0 }}>
+                    {expanded ? '▲' : '▼'}
+                  </span>
+                </button>
+                {expanded && (
+                  <div style={{
+                    padding: '10px 14px 14px 12px',
+                    fontFamily: FONT.mono,
+                    fontSize: 12,
+                    color: TEXT.dim,
+                    lineHeight: 1.7,
+                    borderTop: `1px solid ${BORDER.dim}`,
+                    whiteSpace: 'pre-wrap',
+                  }}>
+                    {note.content || <span style={{ fontStyle: 'italic', color: TEXT.muted }}>No content.</span>}
+                  </div>
+                )}
+              </div>
+            )
+          })
         )}
       </div>
     </div>

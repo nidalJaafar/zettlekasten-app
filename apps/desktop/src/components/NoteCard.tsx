@@ -1,4 +1,5 @@
 import type { Note } from '@zettelkasten/core'
+import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface Props {
   note: Note
@@ -17,25 +18,38 @@ function timeAgo(ts: number): string {
 
 export default function NoteCard({ note, onProcess }: Props) {
   return (
-    <div style={{
-      background: '#22223a',
-      border: '1px solid #3d3d6b',
-      borderRadius: 8,
-      padding: '12px 14px',
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: 12,
-    }}>
+    <div
+      className="note-card"
+      style={{
+        background: BG.card,
+        border: `1px solid ${BORDER.base}`,
+        borderLeft: `3px solid ${ACCENT.amber}`,
+        borderRadius: 5,
+        padding: '11px 14px 11px 12px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+      }}
+    >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e0ff', marginBottom: 4 }}>
+        <div style={{
+          fontFamily: FONT.serif,
+          fontSize: 15,
+          fontWeight: 500,
+          color: TEXT.primary,
+          marginBottom: 5,
+          lineHeight: 1.35,
+          letterSpacing: '0.005em',
+        }}>
           {note.title}
         </div>
         {note.content && (
           <div style={{
-            fontSize: 12,
-            color: '#7f8fa6',
+            fontFamily: FONT.mono,
+            fontSize: 11,
+            color: TEXT.muted,
             lineHeight: 1.5,
-            marginBottom: 6,
+            marginBottom: 5,
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: 2,
@@ -44,21 +58,24 @@ export default function NoteCard({ note, onProcess }: Props) {
             {note.content}
           </div>
         )}
-        <div style={{ fontSize: 11, color: '#555' }}>{timeAgo(note.created_at)}</div>
+        <div style={{ fontSize: 11, color: TEXT.muted, letterSpacing: '0.02em' }}>
+          {timeAgo(note.created_at)}
+        </div>
       </div>
       <button
         onClick={() => onProcess(note)}
+        className="process-btn"
         style={{
-          background: '#6c63ff',
-          color: 'white',
+          background: 'transparent',
+          color: TEXT.muted,
           border: 'none',
-          borderRadius: 4,
-          padding: '6px 10px',
+          padding: '4px 0',
           fontSize: 11,
-          fontWeight: 600,
+          fontWeight: 400,
           cursor: 'pointer',
           whiteSpace: 'nowrap',
           flexShrink: 0,
+          letterSpacing: '0.02em',
         }}
       >
         Process →

@@ -1,0 +1,52 @@
+/* Zettelkasten — global styles & hover states */
+
+input, select, textarea, button { font-family: inherit; }
+::placeholder { color: #45423e; opacity: 1; }
+*:focus { outline: none; }
+
+/* Nav item */
+.nav-item { transition: color 0.12s ease; }
+.nav-item:hover { color: #ddd8c6 !important; }
+
+/* Note cards */
+.note-card { transition: border-color 0.12s ease; }
+.note-card:hover { border-color: #363652 !important; }
+
+/* Process button */
+.process-btn { transition: color 0.12s ease; }
+.process-btn:hover { color: #c09a38 !important; }
+
+/* Queue items */
+.queue-item { transition: background 0.1s ease, border-color 0.1s ease; }
+.queue-item:hover { background: #1c1c28 !important; border-color: #363652 !important; }
+
+/* Pickers */
+.picker-row { transition: background 0.1s ease; }
+.picker-row:hover { background: #1c1c28 !important; }
+
+.source-row { transition: background 0.1s ease; }
+.source-row:hover { background: #1c1c28 !important; }
+
+.add-source-btn { transition: border-color 0.1s ease, color 0.1s ease; }
+.add-source-btn:hover { border-color: #363652 !important; color: #888070 !important; }
+
+/* Dropdowns */
+.dropdown-item { transition: background 0.1s ease, color 0.1s ease; }
+.dropdown-item:hover { background: rgba(192,154,56,0.08) !important; color: #ddd8c6 !important; }
+
+/* Library */
+.library-card { transition: border-color 0.12s ease; }
+.library-card:hover { border-color: #363652 !important; }
+
+/* Buttons */
+.btn-ghost { transition: background 0.1s ease, color 0.1s ease; }
+.btn-ghost:hover { background: #1c1c28 !important; color: #ddd8c6 !important; }
+
+.btn-new { transition: border-color 0.1s ease, color 0.1s ease; }
+.btn-new:hover { border-color: #363652 !important; color: #ddd8c6 !important; }
+
+.btn-inspect { transition: color 0.12s ease, border-color 0.12s ease; }
+.btn-inspect:hover { color: #c09a38 !important; border-color: rgba(192,154,56,0.4) !important; }
+
+.btn-dismiss { transition: background 0.1s ease; }
+.btn-dismiss:hover { background: #1c1c28 !important; }
