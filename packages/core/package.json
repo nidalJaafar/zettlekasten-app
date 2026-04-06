@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/sql.js": "^1.4.11",
+    "sql.js": "^1.14.1",
     "typescript": "^5.4.5",
     "vitest": "^1.5.0"
   }
