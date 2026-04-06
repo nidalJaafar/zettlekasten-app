@@ -36,6 +36,11 @@ describe('createNote', () => {
     })
     expect(note.source_id).toBe('src-1')
   })
+
+  it('sets processed_at to null by default', async () => {
+    const note = await createNote(db, { type: 'fleeting', title: 'Unprocessed' })
+    expect(note.processed_at).toBeNull()
+  })
 })
 
 describe('getNoteById', () => {
@@ -85,6 +90,14 @@ describe('updateNote', () => {
     const updated = await getNoteById(db, note.id)
     expect(updated?.title).toBe('Updated')
     expect(updated?.content).toBe('New content')
+  })
+
+  it('can set processed_at', async () => {
+    const note = await createNote(db, { type: 'literature', title: 'To process' })
+    const ts = Date.now()
+    await updateNote(db, note.id, { processed_at: ts })
+    const updated = await getNoteById(db, note.id)
+    expect(updated?.processed_at).toBe(ts)
   })
 })
 

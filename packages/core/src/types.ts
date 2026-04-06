@@ -18,6 +18,7 @@ export interface Note {
   source_id: string | null
   own_words_confirmed: 0 | 1
   deleted_at: number | null
+  processed_at: number | null
 }
 
 export interface Source {

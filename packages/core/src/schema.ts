@@ -20,7 +20,8 @@ export const SQL_CREATE_NOTES = `
     updated_at INTEGER NOT NULL,
     source_id TEXT REFERENCES sources(id),
     own_words_confirmed INTEGER NOT NULL DEFAULT 0,
-    deleted_at INTEGER
+    deleted_at INTEGER,
+    processed_at INTEGER
   )
 `
 
@@ -37,4 +38,9 @@ export async function runMigrations(db: Database): Promise<void> {
   await db.execute(SQL_CREATE_SOURCES)
   await db.execute(SQL_CREATE_NOTES)
   await db.execute(SQL_CREATE_NOTE_LINKS)
+  // Safe migration: add processed_at to existing tables that predate this column
+  const cols = await db.query<{ name: string }>(`PRAGMA table_info(notes)`)
+  if (!cols.find((c) => c.name === 'processed_at')) {
+    await db.execute(`ALTER TABLE notes ADD COLUMN processed_at INTEGER`)
+  }
 }

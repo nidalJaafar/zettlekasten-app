@@ -18,12 +18,13 @@ export async function createNote(db: Database, input: CreateNoteInput): Promise<
     source_id: input.source_id ?? null,
     own_words_confirmed: 0,
     deleted_at: null,
+    processed_at: null,
   }
   await db.execute(
-    `INSERT INTO notes (id, type, title, content, created_at, updated_at, source_id, own_words_confirmed, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO notes (id, type, title, content, created_at, updated_at, source_id, own_words_confirmed, deleted_at, processed_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [note.id, note.type, note.title, note.content, note.created_at, note.updated_at,
-     note.source_id, note.own_words_confirmed, note.deleted_at]
+     note.source_id, note.own_words_confirmed, note.deleted_at, note.processed_at]
   )
   return note
 }
@@ -45,7 +46,7 @@ export async function getNotesByType(db: Database, type: NoteType): Promise<Note
 export async function updateNote(
   db: Database,
   id: string,
-  updates: Partial<Pick<Note, 'title' | 'content' | 'type' | 'source_id' | 'own_words_confirmed'>>
+  updates: Partial<Pick<Note, 'title' | 'content' | 'type' | 'source_id' | 'own_words_confirmed' | 'processed_at'>>
 ): Promise<void> {
   const entries = Object.entries(updates)
   if (entries.length === 0) return
