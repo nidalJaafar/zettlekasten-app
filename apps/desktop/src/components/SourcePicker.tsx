@@ -21,7 +21,7 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
   const [newDesc, setNewDesc] = useState('')
 
   useEffect(() => {
-    db.query<Source>(`SELECT * FROM sources WHERE deleted_at IS NULL ORDER BY created_at DESC`)
+    db.query<Source>(`SELECT id, type, label, description, created_at FROM sources WHERE deleted_at IS NULL ORDER BY created_at DESC`)
       .then(setSources)
   }, [db])
 
@@ -38,10 +38,15 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
       description: newDesc.trim() || null,
       created_at: Date.now(),
     }
-    await db.execute(
-      `INSERT INTO sources (id, type, label, description, created_at) VALUES (?, ?, ?, ?, ?)`,
-      [source.id, source.type, source.label, source.description, source.created_at]
-    )
+    try {
+      await db.execute(
+        `INSERT INTO sources (id, type, label, description, created_at) VALUES (?, ?, ?, ?, ?)`,
+        [source.id, source.type, source.label, source.description, source.created_at]
+      )
+    } catch (err) {
+      console.error('Failed to create source:', err)
+      return
+    }
     setSources((prev) => [source, ...prev])
     onSelect(source.id)
     setCreating(false)

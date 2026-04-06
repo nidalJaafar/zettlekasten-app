@@ -38,17 +38,7 @@ export default function ReviewScreen({ db }: Props) {
 
   useEffect(() => { loadQueue() }, [loadQueue])
 
-  // Listen for process events from Inbox
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const note = (e as CustomEvent<Note>).detail
-      selectNote(note)
-    }
-    window.addEventListener('zettel:review', handler)
-    return () => window.removeEventListener('zettel:review', handler)
-  }, [])
-
-  function selectNote(note: Note) {
+  const selectNote = useCallback((note: Note) => {
     setCurrent(note)
     setTitle(note.title)
     setContent(note.content)
@@ -57,17 +47,29 @@ export default function ReviewScreen({ db }: Props) {
     setLinkedIds([])
     setBlockReason(null)
     setStep(note.type === 'fleeting' ? 'fleeting-to-literature' : 'literature-to-permanent')
-  }
+  }, [])
+
+  // Listen for process events from Inbox
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const note = (e as CustomEvent<Note>).detail
+      selectNote(note)
+    }
+    window.addEventListener('zettel:review', handler)
+    return () => window.removeEventListener('zettel:review', handler)
+  }, [selectNote])
 
   async function handlePromoteToLiterature() {
     if (!current) return
     const check = canPromoteToLiterature({ ...current, source_id: sourceId })
     if (!check.ok) { setBlockReason(check.reason); return }
-    await updateNote(db, current.id, { type: 'literature', title, content, source_id: sourceId! })
+    if (!sourceId) return  // canPromoteToLiterature already blocks this, but be explicit
+    await updateNote(db, current.id, { type: 'literature', title, content, source_id: sourceId })
     const updated = { ...current, type: 'literature' as const, title, content, source_id: sourceId }
     setCurrent(updated)
     setStep('literature-to-permanent')
     setBlockReason(null)
+    await loadQueue()
   }
 
   async function handleSavePermanent() {

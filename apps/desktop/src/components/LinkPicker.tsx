@@ -11,15 +11,20 @@ interface Props {
 export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
   const [notes, setNotes] = useState<Note[]>([])
   const [query, setQuery] = useState('')
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    getNotesByType(db, 'permanent').then(setNotes)
+    getNotesByType(db, 'permanent').then((result) => {
+      setNotes(result)
+      setLoaded(true)
+    })
   }, [db])
 
   const filtered = notes.filter((n) =>
     n.title.toLowerCase().includes(query.toLowerCase())
   )
 
+  if (!loaded) return null
   if (notes.length === 0) {
     return (
       <div style={{ fontSize: 12, color: '#555', fontStyle: 'italic', padding: '8px 0' }}>
