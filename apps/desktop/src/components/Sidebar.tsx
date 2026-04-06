@@ -9,6 +9,7 @@ interface Props {
 const items: { id: Screen; label: string; icon: string }[] = [
   { id: 'inbox', label: 'Inbox', icon: '📥' },
   { id: 'review', label: 'Review', icon: '🔄' },
+  { id: 'library', label: 'Library', icon: '📚' },
   { id: 'graph', label: 'Graph', icon: '🕸️' },
 ]
 

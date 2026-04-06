@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar'
 import InboxScreen from './screens/InboxScreen'
 import ReviewScreen from './screens/ReviewScreen'
 import GraphScreen from './screens/GraphScreen'
+import LibraryScreen from './screens/LibraryScreen'
 
 export type Screen = 'inbox' | 'review' | 'library' | 'graph'
 
@@ -71,6 +72,7 @@ export default function App() {
             onNoteConsumed={() => setPendingReviewNote(null)}
           />
         )}
+        {screen === 'library' && <LibraryScreen db={db} />}
         {screen === 'graph' && <GraphScreen db={db} />}
       </main>
     </div>
