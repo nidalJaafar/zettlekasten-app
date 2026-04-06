@@ -32,7 +32,9 @@ export default function ReviewScreen({ db }: Props) {
 
   const loadQueue = useCallback(async () => {
     const fleeting = await getNotesByType(db, 'fleeting')
-    const literature = await getNotesByType(db, 'literature')
+    const literature = await db.query<Note>(
+      `SELECT * FROM notes WHERE type = 'literature' AND processed_at IS NULL AND deleted_at IS NULL ORDER BY created_at ASC`
+    )
     setQueue([...fleeting, ...literature])
   }, [db])
 
@@ -91,6 +93,8 @@ export default function ReviewScreen({ db }: Props) {
     for (const id of linkedIds) {
       await addLink(db, permanent.id, id)
     }
+    // Mark the literature note as processed — it moves to Library
+    await updateNote(db, current.id, { processed_at: Date.now() })
     setCurrent(null)
     setBlockReason(null)
     await loadQueue()
