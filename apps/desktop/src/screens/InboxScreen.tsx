@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { getNotesByType, createNote } from '@zettelkasten/core'
 import type { Database, Note } from '@zettelkasten/core'
 import NoteCard from '../components/NoteCard'
@@ -11,8 +11,8 @@ interface Props {
 export default function InboxScreen({ db, onCountChange }: Props) {
   const [notes, setNotes] = useState<Note[]>([])
   const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownContainerRef = useRef<HTMLDivElement>(null)
 
   const loadNotes = useCallback(async () => {
     const fleeting = await getNotesByType(db, 'fleeting')
@@ -22,11 +22,20 @@ export default function InboxScreen({ db, onCountChange }: Props) {
 
   useEffect(() => { loadNotes() }, [loadNotes])
 
+  useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      if (dropdownContainerRef.current && !dropdownContainerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => { document.removeEventListener('mousedown', handleMouseDown) }
+  }, [])
+
   async function handleCapture() {
     if (!title.trim()) return
-    await createNote(db, { type: 'fleeting', title: title.trim(), content })
+    await createNote(db, { type: 'fleeting', title: title.trim() })
     setTitle('')
-    setContent('')
     await loadNotes()
   }
 
@@ -61,7 +70,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
           <div style={{ fontSize: 16, fontWeight: 700, color: '#e0e0ff' }}>Inbox</div>
           <div style={{ fontSize: 12, color: '#7f8fa6' }}>{notes.length} fleeting notes to process</div>
         </div>
-        <div style={{ marginLeft: 'auto', position: 'relative' }}>
+        <div ref={dropdownContainerRef} style={{ marginLeft: 'auto', position: 'relative' }}>
           <button
             onClick={() => setShowDropdown(!showDropdown)}
             style={{
