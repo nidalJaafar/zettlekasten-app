@@ -7,6 +7,7 @@ import InboxScreen from './screens/InboxScreen'
 import ReviewScreen from './screens/ReviewScreen'
 import GraphScreen from './screens/GraphScreen'
 import LibraryScreen from './screens/LibraryScreen'
+import NoteModal from './components/NoteModal'
 
 export type Screen = 'inbox' | 'review' | 'library' | 'graph'
 
@@ -16,6 +17,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('inbox')
   const [inboxCount, setInboxCount] = useState(0)
   const [pendingReviewNote, setPendingReviewNote] = useState<Note | null>(null)
+  const [openNote, setOpenNote] = useState<Note | null>(null)
 
   useEffect(() => {
     getDb().then(async (database) => {
@@ -34,13 +36,19 @@ export default function App() {
     }
     const handleNewLiterature = () => setScreen('review')
     const handleNewPermanent = () => setScreen('review')
+    const handleOpenNote = (e: Event) => {
+      const note = (e as CustomEvent<Note>).detail
+      setOpenNote(note)
+    }
     window.addEventListener('zettel:review', handleReview)
     window.addEventListener('zettel:new-literature', handleNewLiterature)
     window.addEventListener('zettel:new-permanent', handleNewPermanent)
+    window.addEventListener('zettel:open-note', handleOpenNote)
     return () => {
       window.removeEventListener('zettel:review', handleReview)
       window.removeEventListener('zettel:new-literature', handleNewLiterature)
       window.removeEventListener('zettel:new-permanent', handleNewPermanent)
+      window.removeEventListener('zettel:open-note', handleOpenNote)
     }
   }, [])
 
@@ -75,6 +83,9 @@ export default function App() {
         {screen === 'library' && <LibraryScreen db={db} />}
         {screen === 'graph' && <GraphScreen db={db} />}
       </main>
+      {openNote && (
+        <NoteModal db={db} note={openNote} onClose={() => setOpenNote(null)} />
+      )}
     </div>
   )
 }
