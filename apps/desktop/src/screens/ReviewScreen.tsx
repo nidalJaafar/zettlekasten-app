@@ -468,6 +468,42 @@ export default function ReviewScreen({
         </div>
       )}
 
+      {/* Requirements checklist */}
+      {step === 'literature-to-permanent' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontFamily: FONT.mono,
+              fontSize: 11,
+              color: ownWords ? ACCENT.success : TEXT.faint,
+              width: 14,
+              flexShrink: 0,
+            }}>
+              {ownWords ? '✓' : '✗'}
+            </span>
+            <span style={{ fontSize: 11, color: TEXT.secondary, fontFamily: FONT.ui }}>
+              Written in own words
+            </span>
+          </div>
+          {totalPermanentNotes > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                fontFamily: FONT.mono,
+                fontSize: 11,
+                color: linkedIds.length > 0 ? ACCENT.success : TEXT.faint,
+                width: 14,
+                flexShrink: 0,
+              }}>
+                {linkedIds.length > 0 ? '✓' : '✗'}
+              </span>
+              <span style={{ fontSize: 11, color: TEXT.secondary, fontFamily: FONT.ui }}>
+                At least one link selected
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Action */}
       {step === 'fleeting-to-literature' ? (
         <button
