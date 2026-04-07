@@ -366,8 +366,8 @@ export default function ReviewScreen({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          textAlign: 'center',
           paddingTop: 60,
+          minHeight: 220,
         }}>
           <div style={{ fontSize: 13, color: TEXT.secondary, fontFamily: FONT.ui }}>
             Permanent note saved.
