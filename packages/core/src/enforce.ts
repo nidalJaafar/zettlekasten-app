@@ -24,11 +24,16 @@ export function canSavePermanentNote(
 }
 
 export function validatePromotion(from: NoteType, to: NoteType): Result {
+  if (from === to) {
+    return { ok: false, reason: 'Promotion must move a note forward to the next stage.' }
+  }
+  if (from === 'fleeting' && to === 'literature') return { ok: true }
+  if (from === 'literature' && to === 'permanent') return { ok: true }
   if (from === 'fleeting' && to === 'permanent') {
     return {
       ok: false,
       reason: 'Fleeting notes cannot skip to permanent. Process through literature first.',
     }
   }
-  return { ok: true }
+  return { ok: false, reason: 'Notes can only move forward one stage at a time.' }
 }

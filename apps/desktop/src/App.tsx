@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getDb } from './db'
-import { runMigrations } from '@zettelkasten/core'
+import { getNotesByType, runMigrations } from '@zettelkasten/core'
 import type { Database, Note } from '@zettelkasten/core'
 import Sidebar from './components/Sidebar'
 import InboxScreen from './screens/InboxScreen'
@@ -10,6 +10,7 @@ import LibraryScreen from './screens/LibraryScreen'
 import NoteModal from './components/NoteModal'
 
 export type Screen = 'inbox' | 'review' | 'library' | 'graph'
+type ReviewDraftType = 'literature' | 'permanent'
 
 export default function App() {
   const [db, setDb] = useState<Database | null>(null)
@@ -17,7 +18,14 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('inbox')
   const [inboxCount, setInboxCount] = useState(0)
   const [pendingReviewNote, setPendingReviewNote] = useState<Note | null>(null)
+  const [reviewDraftType, setReviewDraftType] = useState<ReviewDraftType | null>(null)
   const [openNote, setOpenNote] = useState<Note | null>(null)
+
+  const refreshInboxCount = useCallback(async () => {
+    if (!db) return
+    const fleeting = await getNotesByType(db, 'fleeting')
+    setInboxCount(fleeting.length)
+  }, [db])
 
   useEffect(() => {
     getDb().then(async (database) => {
@@ -29,13 +37,28 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (db) {
+      void refreshInboxCount()
+    }
+  }, [db, refreshInboxCount])
+
+  useEffect(() => {
     const handleReview = (e: Event) => {
       const note = (e as CustomEvent<Note>).detail
+      setReviewDraftType(null)
       setPendingReviewNote(note)
       setScreen('review')
     }
-    const handleNewLiterature = () => setScreen('review')
-    const handleNewPermanent = () => setScreen('review')
+    const handleNewLiterature = () => {
+      setPendingReviewNote(null)
+      setReviewDraftType('literature')
+      setScreen('review')
+    }
+    const handleNewPermanent = () => {
+      setPendingReviewNote(null)
+      setReviewDraftType('permanent')
+      setScreen('review')
+    }
     const handleOpenNote = (e: Event) => {
       const note = (e as CustomEvent<Note>).detail
       setOpenNote(note)
@@ -77,7 +100,10 @@ export default function App() {
           <ReviewScreen
             db={db}
             pendingNote={pendingReviewNote}
+            draftType={reviewDraftType}
+            onDraftConsumed={() => setReviewDraftType(null)}
             onNoteConsumed={() => setPendingReviewNote(null)}
+            onInboxCountChange={refreshInboxCount}
           />
         )}
         {screen === 'library' && <LibraryScreen db={db} />}

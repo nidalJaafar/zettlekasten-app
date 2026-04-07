@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { addLink, removeLink, getLinkedNoteIds, getAllLinks } from '../src/links'
-import { createNote } from '../src/notes'
+import { createNote, softDeleteNote } from '../src/notes'
 import { createMigratedDb } from './helpers/db'
 import type { Database } from '../src/types'
 
@@ -32,6 +32,13 @@ describe('addLink', () => {
     await addLink(db, idA, idB)
     await expect(addLink(db, idA, idB)).resolves.not.toThrow()
   })
+
+  it('rejects when destination note does not exist', async () => {
+    await expect(addLink(db, idA, 'missing-note')).rejects.toThrow(/foreign key/i)
+
+    expect(await getLinkedNoteIds(db, idA)).toEqual([])
+    expect(await getAllLinks(db)).toEqual([])
+  })
 })
 
 describe('removeLink', () => {
@@ -59,6 +66,13 @@ describe('getLinkedNoteIds', () => {
     const linked = await getLinkedNoteIds(db, idA)
     expect(linked).toHaveLength(0)
   })
+
+  it('hides linked note ids when the linked note is soft-deleted', async () => {
+    await addLink(db, idA, idB)
+    await softDeleteNote(db, idB)
+
+    await expect(getLinkedNoteIds(db, idA)).resolves.toEqual([])
+  })
 })
 
 describe('getAllLinks', () => {
@@ -67,5 +81,16 @@ describe('getAllLinks', () => {
     await addLink(db, idA, idC)
     const all = await getAllLinks(db)
     expect(all).toHaveLength(2)
+  })
+
+  it('omits deleted-note edges from getAllLinks', async () => {
+    await addLink(db, idA, idB)
+    await addLink(db, idA, idC)
+    await softDeleteNote(db, idB)
+
+    const links = await getAllLinks(db)
+
+    expect(links).toHaveLength(1)
+    expect([links[0].from_note_id, links[0].to_note_id].sort()).toEqual([idA, idC].sort())
   })
 })

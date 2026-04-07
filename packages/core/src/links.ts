@@ -21,7 +21,11 @@ export async function removeLink(db: Database, fromId: string, toId: string): Pr
 
 export async function getLinkedNoteIds(db: Database, noteId: string): Promise<string[]> {
   const rows = await db.query<{ to_note_id: string }>(
-    `SELECT to_note_id FROM note_links WHERE from_note_id = ?`,
+    `SELECT nl.to_note_id
+     FROM note_links nl
+     JOIN notes from_note ON from_note.id = nl.from_note_id AND from_note.deleted_at IS NULL
+     JOIN notes to_note ON to_note.id = nl.to_note_id AND to_note.deleted_at IS NULL
+     WHERE nl.from_note_id = ?`,
     [noteId]
   )
   return rows.map((r) => r.to_note_id)
@@ -29,6 +33,11 @@ export async function getLinkedNoteIds(db: Database, noteId: string): Promise<st
 
 export async function getAllLinks(db: Database): Promise<NoteLink[]> {
   return db.query<NoteLink>(
-    `SELECT * FROM note_links WHERE from_note_id < to_note_id ORDER BY created_at ASC`
+    `SELECT nl.*
+     FROM note_links nl
+     JOIN notes from_note ON from_note.id = nl.from_note_id AND from_note.deleted_at IS NULL
+     JOIN notes to_note ON to_note.id = nl.to_note_id AND to_note.deleted_at IS NULL
+     WHERE nl.from_note_id < nl.to_note_id
+     ORDER BY nl.created_at ASC`
   )
 }

@@ -7,7 +7,15 @@ export interface CreateNoteInput {
   source_id?: string
 }
 
+function assertLiteratureHasSource(type: NoteType, sourceId: string | null | undefined): void {
+  if (type === 'literature' && !sourceId) {
+    throw new Error('Literature notes require a source.')
+  }
+}
+
 export async function createNote(db: Database, input: CreateNoteInput): Promise<Note> {
+  assertLiteratureHasSource(input.type, input.source_id)
+
   const note: Note = {
     id: globalThis.crypto.randomUUID(),
     type: input.type,
@@ -48,8 +56,21 @@ export async function updateNote(
   id: string,
   updates: Partial<Pick<Note, 'title' | 'content' | 'type' | 'source_id' | 'own_words_confirmed' | 'processed_at'>>
 ): Promise<void> {
-  const entries = Object.entries(updates)
+  const entries = Object.entries(updates).filter(([, value]) => value !== undefined)
   if (entries.length === 0) return
+
+  const current = await db.queryOne<Pick<Note, 'type' | 'source_id'>>(
+    `SELECT type, source_id FROM notes WHERE id = ?`,
+    [id]
+  )
+  if (!current) throw new Error('Note not found.')
+
+  const nextType = updates.type ?? current.type
+  const nextSourceId = updates.source_id !== undefined ? updates.source_id : current.source_id
+  if (updates.type !== undefined || updates.source_id !== undefined) {
+    assertLiteratureHasSource(nextType, nextSourceId)
+  }
+
   const fields = entries.map(([k]) => `${k} = ?`).join(', ')
   const values = [...entries.map(([, v]) => v), Date.now(), id]
   await db.execute(`UPDATE notes SET ${fields}, updated_at = ? WHERE id = ?`, values)

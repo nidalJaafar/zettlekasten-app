@@ -27,6 +27,17 @@ export default function GraphScreen({ db }: Props) {
     ? notes.filter((n) => n.title.toLowerCase().includes(query.toLowerCase()))
     : notes
 
+  const visibleNoteIds = new Set(filtered.map((note) => note.id))
+  const visibleLinks = links.filter(
+    (link) => visibleNoteIds.has(link.from_note_id) && visibleNoteIds.has(link.to_note_id)
+  )
+
+  useEffect(() => {
+    if (selected && !visibleNoteIds.has(selected.id)) {
+      setSelected(null)
+    }
+  }, [selected, visibleNoteIds])
+
   if (!loaded) return null
   if (notes.length === 0) {
     return (
@@ -47,7 +58,7 @@ export default function GraphScreen({ db }: Props) {
 
   return (
     <div style={{ position: 'relative', height: '100%' }}>
-      <GraphCanvas notes={filtered} links={links} onNodeClick={setSelected} />
+      <GraphCanvas notes={filtered} links={visibleLinks} onNodeClick={setSelected} />
 
       {/* Search overlay */}
       <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -121,7 +132,7 @@ export default function GraphScreen({ db }: Props) {
             </div>
           )}
           <div style={{ fontSize: 10, color: TEXT.muted, marginBottom: 12, letterSpacing: '0.04em' }}>
-            {links.filter((l) => l.from_note_id === selected.id || l.to_note_id === selected.id).length} connections
+            {visibleLinks.filter((l) => l.from_note_id === selected.id || l.to_note_id === selected.id).length} connections
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button

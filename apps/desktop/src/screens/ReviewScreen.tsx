@@ -17,16 +17,28 @@ import { BG, TEXT, ACCENT, FONT, BORDER, typeColor } from '../theme'
 interface Props {
   db: Database
   pendingNote?: Note | null
+  draftType?: 'literature' | 'permanent' | null
   onNoteConsumed?: () => void
+  onDraftConsumed?: () => void
+  onInboxCountChange?: () => Promise<void> | void
 }
 
 type ReviewStep = 'fleeting-to-literature' | 'literature-to-permanent'
 
 const STEP_ORDER = ['fleeting', 'literature', 'permanent'] as const
 
-export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props) {
+export default function ReviewScreen({
+  db,
+  pendingNote,
+  draftType,
+  onNoteConsumed,
+  onDraftConsumed,
+  onInboxCountChange,
+}: Props) {
   const [queue, setQueue] = useState<Note[]>([])
+  const [totalPermanentNotes, setTotalPermanentNotes] = useState(0)
   const [current, setCurrent] = useState<Note | null>(null)
+  const [activeDraftType, setActiveDraftType] = useState<'literature' | 'permanent' | null>(null)
   const [step, setStep] = useState<ReviewStep>('fleeting-to-literature')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -34,18 +46,22 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
   const [ownWords, setOwnWords] = useState(false)
   const [linkedIds, setLinkedIds] = useState<string[]>([])
   const [blockReason, setBlockReason] = useState<string | null>(null)
+  const editorType = activeDraftType ?? current?.type ?? null
 
   const loadQueue = useCallback(async () => {
     const fleeting = await getNotesByType(db, 'fleeting')
     const literature = await db.query<Note>(
       `SELECT * FROM notes WHERE type = 'literature' AND processed_at IS NULL AND deleted_at IS NULL ORDER BY created_at ASC`
     )
+    const permanentCount = await countNotesByType(db, 'permanent')
     setQueue([...fleeting, ...literature])
+    setTotalPermanentNotes(permanentCount)
   }, [db])
 
   useEffect(() => { loadQueue() }, [loadQueue])
 
   const selectNote = useCallback((note: Note) => {
+    setActiveDraftType(null)
     setCurrent(note)
     setTitle(note.title)
     setContent(note.content)
@@ -56,6 +72,18 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
     setStep(note.type === 'fleeting' ? 'fleeting-to-literature' : 'literature-to-permanent')
   }, [])
 
+  const startDraft = useCallback((type: 'literature' | 'permanent') => {
+    setActiveDraftType(type)
+    setCurrent(null)
+    setTitle('')
+    setContent('')
+    setSourceId(null)
+    setOwnWords(false)
+    setLinkedIds([])
+    setBlockReason(null)
+    setStep(type === 'literature' ? 'fleeting-to-literature' : 'literature-to-permanent')
+  }, [])
+
   useEffect(() => {
     if (pendingNote) {
       selectNote(pendingNote)
@@ -63,35 +91,99 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
     }
   }, [pendingNote, selectNote, onNoteConsumed])
 
+  useEffect(() => {
+    if (draftType) {
+      startDraft(draftType)
+      onDraftConsumed?.()
+    }
+  }, [draftType, startDraft, onDraftConsumed])
+
+  async function runInTransaction<T>(work: () => Promise<T>): Promise<T> {
+    await db.execute('BEGIN')
+    try {
+      const result = await work()
+      await db.execute('COMMIT')
+      return result
+    } catch (error) {
+      await db.execute('ROLLBACK')
+      throw error
+    }
+  }
+
+  async function savePermanentNote(processedLiteratureId?: string) {
+    return runInTransaction(async () => {
+      const permanent = await createNote(db, { type: 'permanent', title, content })
+      await updateNote(db, permanent.id, { own_words_confirmed: 1 })
+      for (const id of linkedIds) {
+        await addLink(db, permanent.id, id)
+      }
+      if (processedLiteratureId) {
+        await updateNote(db, processedLiteratureId, { processed_at: Date.now() })
+      }
+      return permanent
+    })
+  }
+
+  const canSavePermanent = ownWords && (linkedIds.length > 0 || totalPermanentNotes === 0)
+
   async function handlePromoteToLiterature() {
     if (!current) return
     const check = canPromoteToLiterature({ ...current, source_id: sourceId })
-    if (!check.ok) { setBlockReason(check.reason); return }
+    if (!check.ok) {
+      setBlockReason(check.reason)
+      return
+    }
     if (!sourceId) return
+
     await updateNote(db, current.id, { type: 'literature', title, content, source_id: sourceId })
     const updated = { ...current, type: 'literature' as const, title, content, source_id: sourceId }
     setCurrent(updated)
     setStep('literature-to-permanent')
     setBlockReason(null)
     await loadQueue()
+    await onInboxCountChange?.()
+  }
+
+  async function handleCreateLiteratureDraft() {
+    if (!sourceId) {
+      setBlockReason('Attach a source before creating a literature note.')
+      return
+    }
+
+    const created = await createNote(db, { type: 'literature', title, content, source_id: sourceId })
+    setActiveDraftType(null)
+    selectNote(created)
+    await loadQueue()
   }
 
   async function handleSavePermanent() {
     if (!current) return
-    const totalPermanent = await countNotesByType(db, 'permanent')
+    const currentPermanentCount = await countNotesByType(db, 'permanent')
     const check = canSavePermanentNote(
       { own_words_confirmed: ownWords ? 1 : 0 },
-      { linkedPermanentNoteIds: linkedIds, totalPermanentNotes: totalPermanent }
+      { linkedPermanentNoteIds: linkedIds, totalPermanentNotes: currentPermanentCount }
     )
     if (!check.ok) { setBlockReason(check.reason); return }
 
-    const permanent = await createNote(db, { type: 'permanent', title, content })
-    await updateNote(db, permanent.id, { own_words_confirmed: 1 })
-    for (const id of linkedIds) {
-      await addLink(db, permanent.id, id)
+    await savePermanentNote(current.id)
+    setCurrent(null)
+    setBlockReason(null)
+    await loadQueue()
+  }
+
+  async function handleCreatePermanentDraft() {
+    const currentPermanentCount = await countNotesByType(db, 'permanent')
+    const check = canSavePermanentNote(
+      { own_words_confirmed: ownWords ? 1 : 0 },
+      { linkedPermanentNoteIds: linkedIds, totalPermanentNotes: currentPermanentCount }
+    )
+    if (!check.ok) {
+      setBlockReason(check.reason)
+      return
     }
-    // Mark the literature note as processed — it moves to Library
-    await updateNote(db, current.id, { processed_at: Date.now() })
+
+    await savePermanentNote()
+    setActiveDraftType(null)
     setCurrent(null)
     setBlockReason(null)
     await loadQueue()
@@ -104,7 +196,7 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
   }
 
   // Empty state
-  if (queue.length === 0 && !current) {
+  if (queue.length === 0 && !current && !activeDraftType) {
     return (
       <div style={{
         display: 'flex',
@@ -122,7 +214,7 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
   }
 
   // Queue list view
-  if (!current) {
+  if (!current && !activeDraftType) {
     return (
       <div style={{ height: '100%', background: BG.base, overflowY: 'auto' }}>
         <div style={{ padding: '24px 28px' }}>
@@ -189,8 +281,8 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
       {/* Step indicator */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 28 }}>
         {STEP_ORDER.map((s, i) => {
-          const active = current.type === s
-          const isDone = STEP_ORDER.indexOf(current.type) > i
+          const active = editorType === s
+          const isDone = editorType ? STEP_ORDER.indexOf(editorType) > i : false
           const stepTypeColors = { fleeting: ACCENT.amber, literature: ACCENT.blue, permanent: ACCENT.violet }
           return (
             <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
@@ -223,7 +315,10 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
           )
         })}
         <button
-          onClick={() => setCurrent(null)}
+          onClick={() => {
+            setCurrent(null)
+            setActiveDraftType(null)
+          }}
           style={{
             marginLeft: 'auto',
             background: 'transparent',
@@ -339,12 +434,18 @@ export default function ReviewScreen({ db, pendingNote, onNoteConsumed }: Props)
 
       {/* Action */}
       {step === 'fleeting-to-literature' ? (
-        <button onClick={handlePromoteToLiterature} style={actionButtonStyle(!!sourceId)}>
-          Promote to Literature
+        <button
+          onClick={activeDraftType === 'literature' ? handleCreateLiteratureDraft : handlePromoteToLiterature}
+          style={actionButtonStyle(!!sourceId)}
+        >
+          {activeDraftType === 'literature' ? 'Create Literature Note' : 'Promote to Literature'}
         </button>
       ) : (
-        <button onClick={handleSavePermanent} style={actionButtonStyle(ownWords && linkedIds.length > 0)}>
-          Save as Permanent Note
+        <button
+          onClick={activeDraftType === 'permanent' ? handleCreatePermanentDraft : handleSavePermanent}
+          style={actionButtonStyle(canSavePermanent)}
+        >
+          {activeDraftType === 'permanent' ? 'Create Permanent Note' : 'Save as Permanent Note'}
         </button>
       )}
     </div>

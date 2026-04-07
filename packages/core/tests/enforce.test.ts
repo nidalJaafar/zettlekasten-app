@@ -12,6 +12,7 @@ const base: Note = {
   source_id: null,
   own_words_confirmed: 0,
   deleted_at: null,
+  processed_at: null,
 }
 
 describe('canPromoteToLiterature', () => {
@@ -64,6 +65,21 @@ describe('canSavePermanentNote', () => {
 describe('validatePromotion', () => {
   it('blocks fleeting → permanent skip', () => {
     const r = validatePromotion('fleeting', 'permanent')
+    expect(r.ok).toBe(false)
+  })
+
+  it('blocks literature → fleeting regression', () => {
+    const r = validatePromotion('literature', 'fleeting')
+    expect(r.ok).toBe(false)
+  })
+
+  it('blocks permanent → literature regression', () => {
+    const r = validatePromotion('permanent', 'literature')
+    expect(r.ok).toBe(false)
+  })
+
+  it('blocks no-op promotion attempts', () => {
+    const r = validatePromotion('literature', 'literature')
     expect(r.ok).toBe(false)
   })
 
