@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   getNotesByType,
   updateNote,
@@ -46,6 +46,8 @@ export default function ReviewScreen({
   const [ownWords, setOwnWords] = useState(false)
   const [linkedIds, setLinkedIds] = useState<string[]>([])
   const [blockReason, setBlockReason] = useState<string | null>(null)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const savedTitleRef = useRef('')
   const editorType = activeDraftType ?? current?.type ?? null
 
   const loadQueue = useCallback(async () => {
@@ -69,6 +71,7 @@ export default function ReviewScreen({
     setOwnWords(false)
     setLinkedIds([])
     setBlockReason(null)
+    setSaveState('idle')
     setStep(note.type === 'fleeting' ? 'fleeting-to-literature' : 'literature-to-permanent')
   }, [])
 
@@ -81,6 +84,7 @@ export default function ReviewScreen({
     setOwnWords(false)
     setLinkedIds([])
     setBlockReason(null)
+    setSaveState('idle')
     setStep(type === 'literature' ? 'fleeting-to-literature' : 'literature-to-permanent')
   }, [])
 
@@ -220,11 +224,12 @@ export default function ReviewScreen({
         <div style={{ padding: '24px 28px' }}>
           <div style={{
             fontSize: 10,
-            fontWeight: 600,
-            color: TEXT.muted,
+            fontWeight: 500,
+            color: TEXT.faint,
             textTransform: 'uppercase',
-            letterSpacing: '0.10em',
+            letterSpacing: '0.14em',
             marginBottom: 20,
+            fontFamily: FONT.ui,
           }}>
             Review Queue — {queue.length}
           </div>
@@ -235,8 +240,8 @@ export default function ReviewScreen({
                 onClick={() => selectNote(note)}
                 className="queue-item"
                 style={{
-                  background: BG.card,
-                  border: `1px solid ${BORDER.base}`,
+                  background: BG.raised,
+                  border: `1px solid ${BORDER.faint}`,
                   borderLeft: `3px solid ${typeColor(note.type)}`,
                   borderRadius: 5,
                   padding: '11px 14px 11px 12px',
@@ -248,7 +253,7 @@ export default function ReviewScreen({
                 }}
               >
                 <span style={{
-                  fontFamily: FONT.serif,
+                  fontFamily: FONT.display,
                   fontSize: 15,
                   color: TEXT.primary,
                   flex: 1,
@@ -259,7 +264,7 @@ export default function ReviewScreen({
                 </span>
                 <span style={{
                   fontSize: 9,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   color: typeColor(note.type),
                   textTransform: 'uppercase',
                   letterSpacing: '0.08em',
@@ -277,36 +282,37 @@ export default function ReviewScreen({
 
   // Editor view
   return (
-    <div style={{ padding: '24px 28px', background: BG.base, height: '100%', overflowY: 'auto' }}>
+    <div style={{ padding: '30px 34px 36px', background: BG.base, height: '100%', overflowY: 'auto' }}>
       {/* Step indicator */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 28 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 34 }}>
         {STEP_ORDER.map((s, i) => {
           const active = editorType === s
           const isDone = editorType ? STEP_ORDER.indexOf(editorType) > i : false
-          const stepTypeColors = { fleeting: ACCENT.amber, literature: ACCENT.blue, permanent: ACCENT.violet }
+          const stepTypeColors = { fleeting: ACCENT.fleeting, literature: ACCENT.literature, permanent: ACCENT.permanent }
           return (
             <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
               {i > 0 && (
                 <div style={{
                   width: 20,
                   height: 1,
-                  background: isDone ? TEXT.dim : BORDER.base,
+                  background: isDone ? TEXT.secondary : BORDER.base,
                   margin: '0 6px',
                 }} />
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{
-                  width: 6,
-                  height: 6,
+                  width: 7,
+                  height: 7,
                   borderRadius: '50%',
-                  background: active ? stepTypeColors[s] : isDone ? TEXT.dim : BORDER.hi,
+                  background: active ? stepTypeColors[s] : isDone ? TEXT.secondary : BORDER.strong,
                 }} />
                 <span style={{
                   fontSize: 10,
-                  color: active ? stepTypeColors[s] : TEXT.muted,
-                  fontWeight: active ? 600 : 400,
+                  color: active ? TEXT.primary : TEXT.faint,
+                  fontWeight: 500,
+                  fontFamily: FONT.ui,
                   textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.12em',
                 }}>
                   {s}
                 </span>
@@ -325,6 +331,7 @@ export default function ReviewScreen({
             border: 'none',
             color: TEXT.muted,
             cursor: 'pointer',
+            fontFamily: FONT.ui,
             fontSize: 11,
             letterSpacing: '0.03em',
           }}
@@ -334,7 +341,7 @@ export default function ReviewScreen({
       </div>
 
       {/* Title */}
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 22 }}>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -342,19 +349,18 @@ export default function ReviewScreen({
             width: '100%',
             background: 'transparent',
             border: 'none',
-            borderBottom: `1px solid ${BORDER.base}`,
             color: TEXT.primary,
-            fontFamily: FONT.serif,
-            fontSize: 22,
+            fontFamily: FONT.display,
+            fontSize: 34,
             fontWeight: 500,
-            padding: '4px 0 10px',
+            padding: '2px 0 14px',
             marginBottom: 16,
             outline: 'none',
-            letterSpacing: '0.01em',
-            lineHeight: 1.3,
+            letterSpacing: '-0.015em',
+            lineHeight: 1.2,
           }}
         />
-        <MarkdownEditor value={content} onChange={setContent} minHeight="140px" />
+        <MarkdownEditor value={content} onChange={setContent} minHeight="260px" />
       </div>
 
       {/* Source section */}
@@ -362,17 +368,18 @@ export default function ReviewScreen({
         <div style={{ marginBottom: 20 }}>
           <div style={{
             fontSize: 10,
-            fontWeight: 600,
-            color: TEXT.muted,
+            fontWeight: 500,
+            color: TEXT.faint,
             textTransform: 'uppercase',
-            letterSpacing: '0.10em',
-            marginBottom: 10,
+            letterSpacing: '0.14em',
+            marginBottom: 12,
             display: 'flex',
             alignItems: 'center',
             gap: 8,
+            fontFamily: FONT.ui,
           }}>
             Source
-            <span style={{ color: ACCENT.red, fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
+            <span style={{               color: ACCENT.danger, fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
               *required
             </span>
           </div>
@@ -389,25 +396,26 @@ export default function ReviewScreen({
                 type="checkbox"
                 checked={ownWords}
                 onChange={(e) => setOwnWords(e.target.checked)}
-                style={{ width: 14, height: 14, accentColor: ACCENT.green }}
+                style={{ width: 14, height: 14, accentColor: ACCENT.success }}
               />
-              <span style={{ fontSize: 12, color: TEXT.dim }}>Written in my own words</span>
+              <span style={{ fontSize: 12, color: TEXT.secondary, fontFamily: FONT.ui }}>Written in my own words</span>
             </label>
           </div>
           <div style={{ marginBottom: 20 }}>
             <div style={{
               fontSize: 10,
-              fontWeight: 600,
-              color: TEXT.muted,
+              fontWeight: 500,
+              color: TEXT.faint,
               textTransform: 'uppercase',
-              letterSpacing: '0.10em',
-              marginBottom: 10,
+              letterSpacing: '0.14em',
+              marginBottom: 12,
               display: 'flex',
               alignItems: 'center',
               gap: 8,
+              fontFamily: FONT.ui,
             }}>
               Link to permanent notes
-              <span style={{ color: ACCENT.red, fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
+              <span style={{ color: ACCENT.danger, fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
                 *required
               </span>
             </div>
@@ -421,11 +429,11 @@ export default function ReviewScreen({
         <div style={{
           marginBottom: 14,
           padding: '9px 12px',
-          background: 'rgba(184,85,85,0.10)',
-          border: `1px solid rgba(184,85,85,0.25)`,
+          background: 'rgba(176,108,104,0.10)', // ACCENT.danger (#b06c68) at 10% opacity
+          border: `1px solid rgba(176,108,104,0.25)`, // ACCENT.danger at 25% opacity
           borderRadius: 5,
           fontSize: 12,
-          color: ACCENT.red,
+          color: ACCENT.danger,
           letterSpacing: '0.01em',
         }}>
           {blockReason}
@@ -455,15 +463,16 @@ export default function ReviewScreen({
 function actionButtonStyle(active: boolean): React.CSSProperties {
   return {
     width: '100%',
-    padding: '12px',
-    border: 'none',
-    borderRadius: 6,
+    padding: '13px 16px',
+    border: `1px solid ${active ? ACCENT.ink : BORDER.faint}`,
+    borderRadius: 12,
     fontSize: 11,
-    fontWeight: 600,
+    fontWeight: 500,
     cursor: active ? 'pointer' : 'default',
-    background: active ? ACCENT.gold : BG.hover,
-    color: active ? BG.base : TEXT.muted,
-    letterSpacing: '0.07em',
+    background: active ? ACCENT.inkSoft : BG.raised,
+    color: active ? TEXT.primary : TEXT.faint,
+    letterSpacing: '0.12em',
     textTransform: 'uppercase',
+    fontFamily: FONT.ui,
   }
 }
