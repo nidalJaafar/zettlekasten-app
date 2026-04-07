@@ -510,33 +510,39 @@ export default function ReviewScreen({
       {step === 'fleeting-to-literature' ? (
         <button
           onClick={activeDraftType === 'literature' ? handleCreateLiteratureDraft : handlePromoteToLiterature}
-          style={actionButtonStyle(!!sourceId)}
+          disabled={!sourceId}
+          style={actionButtonStyle(!sourceId)}
         >
           {activeDraftType === 'literature' ? 'Create Literature Note' : 'Promote to Literature'}
         </button>
       ) : (
         <button
           onClick={activeDraftType === 'permanent' ? handleCreatePermanentDraft : handleSavePermanent}
-          style={actionButtonStyle(canSavePermanent)}
+          disabled={!canSavePermanent || saveState === 'saving'}
+          style={actionButtonStyle(!canSavePermanent || saveState === 'saving')}
         >
-          {activeDraftType === 'permanent' ? 'Create Permanent Note' : 'Save as Permanent Note'}
+          {saveState === 'saving'
+            ? 'Saving…'
+            : activeDraftType === 'permanent'
+              ? 'Create Permanent Note'
+              : 'Save as Permanent Note'}
         </button>
       )}
     </div>
   )
 }
 
-function actionButtonStyle(active: boolean): React.CSSProperties {
+function actionButtonStyle(disabled: boolean): React.CSSProperties {
   return {
     width: '100%',
     padding: '13px 16px',
-    border: `1px solid ${active ? ACCENT.ink : BORDER.faint}`,
+    border: `1px solid ${disabled ? BORDER.faint : ACCENT.ink}`,
     borderRadius: 12,
     fontSize: 11,
     fontWeight: 500,
-    cursor: active ? 'pointer' : 'default',
-    background: active ? ACCENT.inkSoft : BG.raised,
-    color: active ? TEXT.primary : TEXT.faint,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    background: disabled ? BG.raised : ACCENT.inkSoft,
+    color: disabled ? TEXT.faint : TEXT.primary,
     letterSpacing: '0.12em',
     textTransform: 'uppercase',
     fontFamily: FONT.ui,
