@@ -31,11 +31,11 @@ export default function LibraryScreen({ db }: Props) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: BG.base }}>
       {/* Header */}
-      <div style={{ padding: '18px 24px 14px', borderBottom: `1px solid ${BORDER.dim}` }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: TEXT.primary, letterSpacing: '0.01em' }}>
+      <div style={{ padding: '18px 24px 14px', borderBottom: `1px solid ${BORDER.faint}` }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: TEXT.primary, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
           Library
         </div>
-        <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 2, letterSpacing: '0.01em' }}>
+        <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 2, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
           {notes.length} processed note{notes.length !== 1 ? 's' : ''}
         </div>
       </div>
@@ -56,6 +56,7 @@ export default function LibraryScreen({ db }: Props) {
             textAlign: 'center',
             marginTop: 48,
             letterSpacing: '0.01em',
+            fontFamily: FONT.ui,
           }}>
             No processed notes yet. Complete a review cycle to see notes here.
           </div>
@@ -67,9 +68,9 @@ export default function LibraryScreen({ db }: Props) {
                 key={note.id}
                 className="library-card"
                 style={{
-                  background: BG.card,
+                  background: BG.raised,
                   border: `1px solid ${BORDER.base}`,
-                  borderLeft: `3px solid ${ACCENT.blue}`,
+                  borderLeft: `3px solid ${ACCENT.literature}`,
                   borderRadius: 5,
                   overflow: 'hidden',
                 }}
@@ -90,7 +91,7 @@ export default function LibraryScreen({ db }: Props) {
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontFamily: FONT.serif,
+                      fontFamily: FONT.display,
                       fontSize: 15,
                       fontWeight: 500,
                       color: TEXT.primary,
@@ -99,7 +100,7 @@ export default function LibraryScreen({ db }: Props) {
                     }}>
                       {note.title}
                     </div>
-                    <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 3, letterSpacing: '0.01em' }}>
+                    <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 3, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
                       {note.source_label ?? 'No source'} · {formatDate(note.processed_at!)}
                     </div>
                   </div>
@@ -112,9 +113,9 @@ export default function LibraryScreen({ db }: Props) {
                     padding: '10px 14px 14px 12px',
                     fontFamily: FONT.mono,
                     fontSize: 12,
-                    color: TEXT.dim,
+                    color: TEXT.secondary,
                     lineHeight: 1.7,
-                    borderTop: `1px solid ${BORDER.dim}`,
+                    borderTop: `1px solid ${BORDER.faint}`,
                     whiteSpace: 'pre-wrap',
                   }}>
                     {note.content || <span style={{ fontStyle: 'italic', color: TEXT.muted }}>No content.</span>}

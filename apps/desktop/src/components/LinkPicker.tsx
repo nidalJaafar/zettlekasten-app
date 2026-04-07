@@ -34,6 +34,7 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
         fontStyle: 'italic',
         padding: '8px 0',
         letterSpacing: '0.01em',
+        fontFamily: FONT.ui,
       }}>
         No permanent notes yet — link requirement waived for first note.
       </div>
@@ -48,7 +49,7 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
         placeholder="Search permanent notes…"
         style={{
           width: '100%',
-          background: BG.card,
+          background: BG.raised,
           border: `1px solid ${BORDER.base}`,
           borderRadius: 5,
           padding: '8px 10px',
@@ -56,6 +57,7 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
           fontSize: 12,
           outline: 'none',
           marginBottom: 6,
+          fontFamily: FONT.ui,
         }}
       />
       <div style={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -72,8 +74,8 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
                 gap: 8,
                 padding: '7px 10px',
                 borderRadius: 5,
-                border: `1px solid ${selected ? ACCENT.violet : BORDER.base}`,
-                background: selected ? 'rgba(112,96,168,0.10)' : BG.card,
+                border: `1px solid ${selected ? ACCENT.permanent : BORDER.base}`,
+                background: selected ? ACCENT.permanentSoft : BG.raised,
                 cursor: 'pointer',
                 width: '100%',
                 textAlign: 'left',
@@ -81,15 +83,15 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
             >
               <span style={{
                 fontSize: 10,
-                color: selected ? ACCENT.violet : TEXT.muted,
+                color: selected ? ACCENT.permanent : TEXT.muted,
                 flexShrink: 0,
               }}>
                 {selected ? '◆' : '◇'}
               </span>
               <span style={{
-                fontFamily: FONT.serif,
+                fontFamily: FONT.display,
                 fontSize: 14,
-                color: selected ? TEXT.primary : TEXT.dim,
+                color: selected ? TEXT.primary : TEXT.secondary,
                 lineHeight: 1.3,
               }}>
                 {note.title}

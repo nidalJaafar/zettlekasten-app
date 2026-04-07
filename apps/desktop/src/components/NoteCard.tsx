@@ -21,9 +21,9 @@ export default function NoteCard({ note, onProcess }: Props) {
     <div
       className="note-card"
       style={{
-        background: BG.card,
+        background: BG.raised,
         border: `1px solid ${BORDER.base}`,
-        borderLeft: `3px solid ${ACCENT.amber}`,
+        borderLeft: `3px solid ${ACCENT.fleeting}`,
         borderRadius: 5,
         padding: '11px 14px 11px 12px',
         display: 'flex',
@@ -33,7 +33,7 @@ export default function NoteCard({ note, onProcess }: Props) {
     >
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: FONT.serif,
+          fontFamily: FONT.display,
           fontSize: 15,
           fontWeight: 500,
           color: TEXT.primary,
@@ -47,7 +47,7 @@ export default function NoteCard({ note, onProcess }: Props) {
           <div style={{
             fontFamily: FONT.mono,
             fontSize: 11,
-            color: TEXT.muted,
+            color: TEXT.faint,
             lineHeight: 1.5,
             marginBottom: 5,
             overflow: 'hidden',
@@ -58,7 +58,7 @@ export default function NoteCard({ note, onProcess }: Props) {
             {note.content}
           </div>
         )}
-        <div style={{ fontSize: 11, color: TEXT.muted, letterSpacing: '0.02em' }}>
+        <div style={{ fontSize: 11, color: TEXT.faint, letterSpacing: '0.02em', fontFamily: FONT.ui }}>
           {timeAgo(note.created_at)}
         </div>
       </div>
@@ -71,6 +71,7 @@ export default function NoteCard({ note, onProcess }: Props) {
           border: 'none',
           padding: '4px 0',
           fontSize: 11,
+          fontFamily: FONT.ui,
           fontWeight: 400,
           cursor: 'pointer',
           whiteSpace: 'nowrap',

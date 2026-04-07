@@ -50,6 +50,7 @@ export default function GraphScreen({ db }: Props) {
         fontSize: 13,
         background: BG.base,
         letterSpacing: '0.01em',
+        fontFamily: FONT.ui,
       }}>
         No permanent notes yet. Process some notes through Review first.
       </div>
@@ -67,24 +68,26 @@ export default function GraphScreen({ db }: Props) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search notes…"
           style={{
-            background: 'rgba(16,16,26,0.92)',
+            background: 'rgba(23,26,32,0.92)',
             border: `1px solid ${BORDER.base}`,
             borderRadius: 6,
             padding: '7px 12px',
             color: TEXT.primary,
             fontSize: 12,
+            fontFamily: FONT.ui,
             outline: 'none',
             width: 200,
             backdropFilter: 'blur(4px)',
           }}
         />
         <div style={{
-          background: 'rgba(16,16,26,0.92)',
-          border: `1px solid ${BORDER.dim}`,
+          background: 'rgba(23,26,32,0.92)',
+          border: `1px solid ${BORDER.faint}`,
           borderRadius: 6,
           padding: '7px 12px',
           fontSize: 11,
           color: TEXT.muted,
+          fontFamily: FONT.ui,
           backdropFilter: 'blur(4px)',
           letterSpacing: '0.02em',
         }}>
@@ -99,15 +102,15 @@ export default function GraphScreen({ db }: Props) {
           bottom: 16,
           right: 16,
           width: 260,
-          background: 'rgba(16,16,26,0.95)',
-          border: `1px solid ${BORDER.hi}`,
+          background: 'rgba(23,26,32,0.95)',
+          border: `1px solid ${BORDER.strong}`,
           borderRadius: 8,
           padding: 16,
           backdropFilter: 'blur(6px)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}>
           <div style={{
-            fontFamily: FONT.serif,
+            fontFamily: FONT.display,
             fontSize: 15,
             fontWeight: 500,
             color: TEXT.primary,
@@ -120,18 +123,19 @@ export default function GraphScreen({ db }: Props) {
           {selected.content && (
             <div style={{
               fontSize: 11,
-              color: TEXT.dim,
+              color: TEXT.secondary,
               lineHeight: 1.5,
               marginBottom: 10,
               display: '-webkit-box',
               WebkitLineClamp: 3,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
+              fontFamily: FONT.mono,
             }}>
               {selected.content}
             </div>
           )}
-          <div style={{ fontSize: 10, color: TEXT.muted, marginBottom: 12, letterSpacing: '0.04em' }}>
+          <div style={{ fontSize: 10, color: TEXT.muted, marginBottom: 12, letterSpacing: '0.04em', fontFamily: FONT.ui }}>
             {visibleLinks.filter((l) => l.from_note_id === selected.id || l.to_note_id === selected.id).length} connections
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
@@ -144,11 +148,12 @@ export default function GraphScreen({ db }: Props) {
               style={{
                 flex: 1,
                 background: 'transparent',
-                color: TEXT.dim,
+                color: TEXT.secondary,
                 border: `1px solid ${BORDER.base}`,
                 borderRadius: 5,
                 padding: '7px 0',
                 fontSize: 11,
+                fontFamily: FONT.ui,
                 fontWeight: 500,
                 cursor: 'pointer',
                 letterSpacing: '0.03em',
@@ -162,7 +167,7 @@ export default function GraphScreen({ db }: Props) {
               style={{
                 background: 'transparent',
                 color: TEXT.muted,
-                border: `1px solid ${BORDER.dim}`,
+                border: `1px solid ${BORDER.faint}`,
                 borderRadius: 5,
                 padding: '7px 10px',
                 fontSize: 11,
@@ -181,11 +186,12 @@ export default function GraphScreen({ db }: Props) {
         bottom: 16,
         left: 16,
         fontSize: 10,
-        color: TEXT.muted,
-        background: 'rgba(11,11,16,0.85)',
+        color: TEXT.faint,
+        fontFamily: FONT.ui,
+        background: 'rgba(13,15,19,0.85)',
         padding: '5px 10px',
         borderRadius: 5,
-        border: `1px solid ${BORDER.dim}`,
+        border: `1px solid ${BORDER.faint}`,
         letterSpacing: '0.04em',
         backdropFilter: 'blur(4px)',
       }}>

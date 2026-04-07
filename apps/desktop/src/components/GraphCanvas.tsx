@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import type { Note, NoteLink } from '@zettelkasten/core'
+import { BG, BORDER, TEXT, ACCENT } from '../theme'
 
 interface GraphNode extends d3.SimulationNodeDatum {
   id: string
@@ -77,7 +78,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
       .data(edges)
       .enter()
       .append('line')
-      .attr('stroke', '#363652')
+      .attr('stroke', BORDER.strong)
       .attr('stroke-opacity', 0.6)
       .attr('stroke-width', 1)
 
@@ -102,15 +103,15 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
 
     node.append('circle')
       .attr('r', (d) => radiusScale(d.linkCount))
-      .attr('fill', '#252540')
-      .attr('stroke', '#4a4a80')
+      .attr('fill', BG.raised)
+      .attr('stroke', ACCENT.permanent)
       .attr('stroke-width', 1)
 
     node.append('text')
       .attr('dy', (d) => radiusScale(d.linkCount) + 13)
       .attr('text-anchor', 'middle')
       .attr('font-size', 10)
-      .attr('fill', '#55504a')
+      .attr('fill', TEXT.faint)
       .text((d) => d.title.length > 24 ? d.title.slice(0, 24) + '…' : d.title)
 
     node.on('click', (_, d) => {
@@ -151,5 +152,5 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
     return () => { simulation.stop() }
   }, [notes, links, onNodeClick])
 
-  return <svg ref={svgRef} width="100%" height="100%" style={{ background: '#0b0b10' }} />
+  return <svg ref={svgRef} width="100%" height="100%" style={{ background: BG.canvas }} />
 }

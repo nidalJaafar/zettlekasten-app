@@ -42,8 +42,8 @@ export default function NoteModal({ db, note, onClose }: Props) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: BG.card,
-          border: `1px solid ${BORDER.hi}`,
+          background: BG.raised,
+          border: `1px solid ${BORDER.strong}`,
           borderRadius: 10,
           padding: '28px 32px',
           width: 540,
@@ -77,7 +77,8 @@ export default function NoteModal({ db, note, onClose }: Props) {
         <div style={{
           fontSize: 10,
           fontWeight: 600,
-          color: ACCENT.gold,
+          color: ACCENT.ink,
+          fontFamily: FONT.ui,
           textTransform: 'uppercase',
           letterSpacing: '0.12em',
           marginBottom: 10,
@@ -87,7 +88,7 @@ export default function NoteModal({ db, note, onClose }: Props) {
 
         {/* Title */}
         <div style={{
-          fontFamily: FONT.serif,
+          fontFamily: FONT.display,
           fontSize: 22,
           fontWeight: 600,
           color: TEXT.primary,
@@ -104,7 +105,7 @@ export default function NoteModal({ db, note, onClose }: Props) {
           <div style={{
             fontFamily: FONT.mono,
             fontSize: 13,
-            color: TEXT.dim,
+            color: TEXT.secondary,
             lineHeight: 1.75,
             marginBottom: 24,
             whiteSpace: 'pre-wrap',
@@ -123,11 +124,12 @@ export default function NoteModal({ db, note, onClose }: Props) {
         )}
 
         {/* Connections */}
-        <div style={{ borderTop: `1px solid ${BORDER.dim}`, paddingTop: 16 }}>
+        <div style={{ borderTop: `1px solid ${BORDER.faint}`, paddingTop: 16 }}>
           <div style={{
             fontSize: 10,
             fontWeight: 600,
             color: TEXT.muted,
+            fontFamily: FONT.ui,
             textTransform: 'uppercase',
             letterSpacing: '0.10em',
             marginBottom: 10,
@@ -140,9 +142,9 @@ export default function NoteModal({ db, note, onClose }: Props) {
                 <div
                   key={n.id}
                   style={{
-                    fontFamily: FONT.serif,
+                    fontFamily: FONT.display,
                     fontSize: 14,
-                    color: TEXT.dim,
+                    color: TEXT.secondary,
                     padding: '6px 10px',
                     background: BG.hover,
                     borderRadius: 4,

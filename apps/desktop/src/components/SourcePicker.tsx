@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Database, Source, SourceType } from '@zettelkasten/core'
-import { BG, TEXT, ACCENT, BORDER } from '../theme'
+import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface Props {
   db: Database
@@ -75,15 +75,15 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
                   className="source-row"
                   style={{
                     ...rowStyle,
-                    background: selected ? ACCENT.goldDim : BG.card,
-                    borderColor: selected ? ACCENT.gold : BORDER.base,
+                    background: selected ? ACCENT.inkSoft : BG.raised,
+                    borderColor: selected ? ACCENT.ink : BORDER.base,
                   }}
                 >
                   <span style={{ fontSize: 12 }}>{ICONS[s.type]}</span>
-                  <span style={{ flex: 1, textAlign: 'left', fontSize: 12, color: selected ? TEXT.primary : TEXT.dim }}>
+                  <span style={{ flex: 1, textAlign: 'left', fontSize: 12, color: selected ? TEXT.primary : TEXT.secondary, fontFamily: FONT.ui }}>
                     {s.label}
                   </span>
-                  {selected && <span style={{ fontSize: 11, color: ACCENT.gold }}>✓</span>}
+                  {selected && <span style={{ fontSize: 11, color: ACCENT.ink }}>✓</span>}
                 </button>
               )
             })}
@@ -98,6 +98,7 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
               border: `1px dashed ${BORDER.base}`,
               color: TEXT.muted,
               fontSize: 12,
+              fontFamily: FONT.ui,
             }}
           >
             + Add new source
@@ -132,13 +133,14 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
               onClick={handleCreate}
               style={{
                 flex: 1,
-                background: ACCENT.gold,
+                background: ACCENT.ink,
                 color: BG.base,
                 border: 'none',
                 borderRadius: 5,
                 padding: '8px 0',
                 fontSize: 12,
                 fontWeight: 600,
+                fontFamily: FONT.ui,
                 cursor: 'pointer',
                 letterSpacing: '0.03em',
               }}
@@ -149,12 +151,13 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
               onClick={() => setCreating(false)}
               className="btn-ghost"
               style={{
-                background: BG.card,
-                color: TEXT.dim,
+                background: BG.raised,
+                color: TEXT.secondary,
                 border: `1px solid ${BORDER.base}`,
                 borderRadius: 5,
                 padding: '8px 14px',
                 fontSize: 12,
+                fontFamily: FONT.ui,
                 cursor: 'pointer',
               }}
             >
@@ -169,7 +172,7 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: BG.card,
+  background: BG.raised,
   border: `1px solid ${BORDER.base}`,
   borderRadius: 5,
   padding: '8px 10px',
@@ -187,5 +190,5 @@ const rowStyle: React.CSSProperties = {
   border: `1px solid ${BORDER.base}`,
   cursor: 'pointer',
   width: '100%',
-  background: BG.card,
+  background: BG.raised,
 }

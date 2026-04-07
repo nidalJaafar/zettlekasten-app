@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { getNotesByType, createNote } from '@zettelkasten/core'
 import type { Database, Note } from '@zettelkasten/core'
 import NoteCard from '../components/NoteCard'
-import { BG, TEXT, ACCENT, BORDER } from '../theme'
+import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface Props {
   db: Database
@@ -60,16 +60,16 @@ export default function InboxScreen({ db, onCountChange }: Props) {
       {/* Header */}
       <div style={{
         padding: '18px 24px 14px',
-        borderBottom: `1px solid ${BORDER.dim}`,
+        borderBottom: `1px solid ${BORDER.faint}`,
         display: 'flex',
         alignItems: 'center',
         gap: 12,
       }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: TEXT.primary, letterSpacing: '0.01em' }}>
+          <div style={{ fontSize: 14, fontWeight: 500, color: TEXT.primary, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
             Inbox
           </div>
-          <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 2, letterSpacing: '0.01em' }}>
+          <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 2, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
             {notes.length} fleeting note{notes.length !== 1 ? 's' : ''} to process
           </div>
         </div>
@@ -79,11 +79,12 @@ export default function InboxScreen({ db, onCountChange }: Props) {
             className="btn-new"
             style={{
               background: 'transparent',
-              color: TEXT.dim,
+              color: TEXT.secondary,
               border: `1px solid ${BORDER.base}`,
               borderRadius: 5,
               padding: '6px 14px',
               fontSize: 12,
+              fontFamily: FONT.ui,
               fontWeight: 400,
               cursor: 'pointer',
               letterSpacing: '0.02em',
@@ -96,7 +97,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
               position: 'absolute',
               right: 0,
               top: '110%',
-              background: BG.surface,
+              background: BG.panel,
               border: `1px solid ${BORDER.base}`,
               borderRadius: 6,
               padding: 4,
@@ -116,7 +117,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
       </div>
 
       {/* Quick capture */}
-      <div style={{ padding: '14px 24px', borderBottom: `1px solid ${BORDER.dim}` }}>
+      <div style={{ padding: '14px 24px', borderBottom: `1px solid ${BORDER.faint}` }}>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -132,6 +133,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
             padding: '6px 0',
             outline: 'none',
             letterSpacing: '0.01em',
+            fontFamily: FONT.ui,
           }}
         />
       </div>
@@ -152,6 +154,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
             textAlign: 'center',
             marginTop: 48,
             letterSpacing: '0.01em',
+            fontFamily: FONT.ui,
           }}>
             Nothing in the inbox. Capture a thought above.
           </div>
@@ -171,8 +174,9 @@ const dropdownItemStyle: React.CSSProperties = {
   padding: '8px 12px',
   background: 'transparent',
   border: 'none',
-  color: TEXT.dim,
+  color: TEXT.secondary,
   fontSize: 12,
+  fontFamily: FONT.ui,
   textAlign: 'left',
   cursor: 'pointer',
   borderRadius: 4,

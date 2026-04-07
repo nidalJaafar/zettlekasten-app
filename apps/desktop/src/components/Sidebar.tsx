@@ -18,8 +18,8 @@ export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
   return (
     <nav style={{
       width: 152,
-      background: BG.surface,
-      borderRight: `1px solid ${BORDER.dim}`,
+      background: BG.panel,
+      borderRight: `1px solid ${BORDER.faint}`,
       display: 'flex',
       flexDirection: 'column',
       padding: '20px 0 16px',
@@ -29,10 +29,10 @@ export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
       {/* App monogram */}
       <div style={{
         padding: '0 20px 18px',
-        fontFamily: FONT.serif,
+        fontFamily: FONT.display,
         fontSize: 28,
         fontWeight: 700,
-        color: ACCENT.gold,
+        color: ACCENT.ink,
         letterSpacing: '-0.01em',
         lineHeight: 1,
       }}>
@@ -40,7 +40,7 @@ export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
       </div>
 
       {/* Divider */}
-      <div style={{ height: 1, background: BORDER.dim, marginBottom: 8 }} />
+      <div style={{ height: 1, background: BORDER.faint, marginBottom: 8 }} />
 
       {items.map((item) => {
         const active = current === item.id
@@ -60,8 +60,9 @@ export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
               width: '100%',
               textAlign: 'left',
               position: 'relative',
-              color: active ? ACCENT.gold : TEXT.dim,
+              color: active ? ACCENT.ink : TEXT.muted,
               fontSize: 13,
+              fontFamily: FONT.ui,
               fontWeight: active ? 500 : 400,
               letterSpacing: '0.01em',
             }}
@@ -74,15 +75,15 @@ export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
                 top: 6,
                 bottom: 6,
                 width: 2,
-                background: ACCENT.gold,
+                background: ACCENT.ink,
                 borderRadius: '0 1px 1px 0',
               }} />
             )}
             <span style={{ flex: 1 }}>{item.label}</span>
             {item.id === 'inbox' && inboxCount > 0 && (
               <span style={{
-                background: 'rgba(201,125,42,0.18)',
-                color: ACCENT.amber,
+                background: ACCENT.inkSoft,
+                color: TEXT.secondary,
                 fontSize: 10,
                 fontWeight: 600,
                 padding: '1px 6px',
@@ -101,9 +102,10 @@ export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
         marginTop: 'auto',
         padding: '0 18px',
         fontSize: 9,
-        color: TEXT.muted,
+        color: TEXT.faint,
         letterSpacing: '0.12em',
         textTransform: 'uppercase',
+        fontFamily: FONT.ui,
       }}>
         Zettelkasten
       </div>
