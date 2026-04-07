@@ -25,8 +25,6 @@ interface Props {
 
 type ReviewStep = 'fleeting-to-literature' | 'literature-to-permanent'
 
-const STEP_ORDER = ['fleeting', 'literature', 'permanent'] as const
-
 export default function ReviewScreen({
   db,
   pendingNote,
@@ -49,7 +47,6 @@ export default function ReviewScreen({
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const savedTitleRef = useRef('')
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const editorType = activeDraftType ?? current?.type ?? null
 
   const loadQueue = useCallback(async () => {
     const fleeting = await getNotesByType(db, 'fleeting')
@@ -319,50 +316,35 @@ export default function ReviewScreen({
   // Editor view
   return (
     <div style={{ padding: '30px 34px 36px', background: BG.base, height: '100%', overflowY: 'auto' }}>
-      {/* Step indicator */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 34 }}>
-        {STEP_ORDER.map((s, i) => {
-          const active = editorType === s
-          const isDone = editorType ? STEP_ORDER.indexOf(editorType) > i : false
-          const stepTypeColors = { fleeting: ACCENT.fleeting, literature: ACCENT.literature, permanent: ACCENT.permanent }
-          return (
-            <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-              {i > 0 && (
-                <div style={{
-                  width: 20,
-                  height: 1,
-                  background: isDone ? TEXT.secondary : BORDER.base,
-                  margin: '0 6px',
-                }} />
-              )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <div style={{
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  background: active ? stepTypeColors[s] : isDone ? TEXT.secondary : BORDER.strong,
-                }} />
-                <span style={{
-                  fontSize: 10,
-                  color: active ? TEXT.primary : TEXT.faint,
-                  fontWeight: 500,
-                  fontFamily: FONT.ui,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                }}>
-                  {s}
-                </span>
-              </div>
-            </div>
-          )
-        })}
+      {/* Step header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 34 }}>
+        <div>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 500,
+            color: TEXT.faint,
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            fontFamily: FONT.ui,
+            marginBottom: 6,
+          }}>
+            {step === 'fleeting-to-literature' ? 'Step 1 of 2' : 'Step 2 of 2'}
+          </div>
+          <div style={{ fontSize: 13, color: TEXT.secondary, fontFamily: FONT.ui }}>
+            {step === 'fleeting-to-literature'
+              ? 'Attach a source and refine your notes.'
+              : totalPermanentNotes === 0
+                ? 'Confirm own words. No links required for your first permanent note.'
+                : 'Confirm own words and link to the knowledge graph.'}
+          </div>
+        </div>
         <button
           onClick={() => {
             setCurrent(null)
             setActiveDraftType(null)
+            setSaveState('idle')
           }}
           style={{
-            marginLeft: 'auto',
             background: 'transparent',
             border: 'none',
             color: TEXT.muted,
@@ -370,6 +352,8 @@ export default function ReviewScreen({
             fontFamily: FONT.ui,
             fontSize: 11,
             letterSpacing: '0.03em',
+            flexShrink: 0,
+            marginLeft: 16,
           }}
         >
           ← queue
