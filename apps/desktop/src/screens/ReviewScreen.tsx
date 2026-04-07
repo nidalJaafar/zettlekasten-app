@@ -169,10 +169,22 @@ export default function ReviewScreen({
     )
     if (!check.ok) { setBlockReason(check.reason); return }
 
-    await savePermanentNote(current.id)
-    setCurrent(null)
-    setBlockReason(null)
-    await loadQueue()
+    savedTitleRef.current = title
+    setSaveState('saving')
+    try {
+      await savePermanentNote(current.id)
+      setSaveState('saved')
+      setTimeout(() => {
+        setCurrent(null)
+        setActiveDraftType(null)
+        setSaveState('idle')
+        setBlockReason(null)
+        loadQueue()
+      }, 1200)
+    } catch {
+      setSaveState('idle')
+      setBlockReason('Failed to save permanent note.')
+    }
   }
 
   async function handleCreatePermanentDraft() {
@@ -186,11 +198,22 @@ export default function ReviewScreen({
       return
     }
 
-    await savePermanentNote()
-    setActiveDraftType(null)
-    setCurrent(null)
-    setBlockReason(null)
-    await loadQueue()
+    savedTitleRef.current = title
+    setSaveState('saving')
+    try {
+      await savePermanentNote()
+      setSaveState('saved')
+      setTimeout(() => {
+        setActiveDraftType(null)
+        setCurrent(null)
+        setSaveState('idle')
+        setBlockReason(null)
+        loadQueue()
+      }, 1200)
+    } catch {
+      setSaveState('idle')
+      setBlockReason('Failed to save permanent note.')
+    }
   }
 
   function toggleLink(id: string) {
