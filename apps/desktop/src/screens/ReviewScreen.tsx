@@ -48,6 +48,7 @@ export default function ReviewScreen({
   const [blockReason, setBlockReason] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const savedTitleRef = useRef('')
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editorType = activeDraftType ?? current?.type ?? null
 
   const loadQueue = useCallback(async () => {
@@ -61,6 +62,10 @@ export default function ReviewScreen({
   }, [db])
 
   useEffect(() => { loadQueue() }, [loadQueue])
+
+  useEffect(() => () => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+  }, [])
 
   const selectNote = useCallback((note: Note) => {
     setActiveDraftType(null)
@@ -162,6 +167,7 @@ export default function ReviewScreen({
 
   async function handleSavePermanent() {
     if (!current) return
+    if (saveState !== 'idle') return
     const currentPermanentCount = await countNotesByType(db, 'permanent')
     const check = canSavePermanentNote(
       { own_words_confirmed: ownWords ? 1 : 0 },
@@ -174,20 +180,24 @@ export default function ReviewScreen({
     try {
       await savePermanentNote(current.id)
       setSaveState('saved')
-      setTimeout(() => {
+      saveTimeoutRef.current = setTimeout(() => {
         setCurrent(null)
         setActiveDraftType(null)
         setSaveState('idle')
         setBlockReason(null)
-        loadQueue()
+        loadQueue().catch((err) => {
+          console.error('Failed to reload queue after save:', err)
+        })
       }, 1200)
-    } catch {
+    } catch (err) {
+      console.error('savePermanentNote failed:', err)
       setSaveState('idle')
       setBlockReason('Failed to save permanent note.')
     }
   }
 
   async function handleCreatePermanentDraft() {
+    if (saveState !== 'idle') return
     const currentPermanentCount = await countNotesByType(db, 'permanent')
     const check = canSavePermanentNote(
       { own_words_confirmed: ownWords ? 1 : 0 },
@@ -203,14 +213,17 @@ export default function ReviewScreen({
     try {
       await savePermanentNote()
       setSaveState('saved')
-      setTimeout(() => {
-        setActiveDraftType(null)
+      saveTimeoutRef.current = setTimeout(() => {
         setCurrent(null)
+        setActiveDraftType(null)
         setSaveState('idle')
         setBlockReason(null)
-        loadQueue()
+        loadQueue().catch((err) => {
+          console.error('Failed to reload queue after save:', err)
+        })
       }, 1200)
-    } catch {
+    } catch (err) {
+      console.error('savePermanentNote failed:', err)
       setSaveState('idle')
       setBlockReason('Failed to save permanent note.')
     }
