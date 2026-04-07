@@ -518,8 +518,8 @@ export default function ReviewScreen({
       ) : (
         <button
           onClick={activeDraftType === 'permanent' ? handleCreatePermanentDraft : handleSavePermanent}
-          disabled={!canSavePermanent || saveState === 'saving'}
-          style={actionButtonStyle(!canSavePermanent || saveState === 'saving')}
+          disabled={!canSavePermanent || saveState !== 'idle'}
+          style={actionButtonStyle(!canSavePermanent || saveState !== 'idle')}
         >
           {saveState === 'saving'
             ? 'Saving…'
