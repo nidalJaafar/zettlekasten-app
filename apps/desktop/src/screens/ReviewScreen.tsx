@@ -421,26 +421,34 @@ export default function ReviewScreen({
               <span style={{ fontSize: 12, color: TEXT.secondary, fontFamily: FONT.ui }}>Written in my own words</span>
             </label>
           </div>
-          <div style={{ marginBottom: 20 }}>
+          {totalPermanentNotes === 0 ? (
             <div style={{
-              fontSize: 10,
-              fontWeight: 500,
+              marginBottom: 20,
+              fontSize: 12,
               color: TEXT.faint,
-              textTransform: 'uppercase',
-              letterSpacing: '0.14em',
-              marginBottom: 12,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
               fontFamily: FONT.ui,
+              fontStyle: 'italic',
+              lineHeight: 1.7,
             }}>
-              Link to permanent notes
-              <span style={{ color: ACCENT.danger, fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 11 }}>
-                *required
-              </span>
+              No permanent notes yet.<br />
+              Your first permanent note can be saved without links — it will anchor the graph.
             </div>
-            <LinkPicker db={db} selectedIds={linkedIds} onToggle={toggleLink} />
-          </div>
+          ) : (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{
+                fontSize: 10,
+                fontWeight: 500,
+                color: TEXT.faint,
+                textTransform: 'uppercase',
+                letterSpacing: '0.14em',
+                marginBottom: 12,
+                fontFamily: FONT.ui,
+              }}>
+                Link to permanent notes
+              </div>
+              <LinkPicker db={db} selectedIds={linkedIds} onToggle={toggleLink} />
+            </div>
+          )}
         </>
       )}
 
