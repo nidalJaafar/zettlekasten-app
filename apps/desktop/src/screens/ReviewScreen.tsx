@@ -360,6 +360,34 @@ export default function ReviewScreen({
         </button>
       </div>
 
+      {saveState === 'saved' ? (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          paddingTop: 60,
+        }}>
+          <div style={{ fontSize: 13, color: TEXT.secondary, fontFamily: FONT.ui }}>
+            Permanent note saved.
+          </div>
+          <div style={{
+            fontSize: 20,
+            color: TEXT.primary,
+            fontFamily: FONT.display,
+            fontStyle: 'italic',
+            margin: '12px 0',
+          }}>
+            &ldquo;{savedTitleRef.current}&rdquo;
+          </div>
+          <div style={{ fontSize: 11, color: TEXT.faint, fontFamily: FONT.ui }}>
+            Returning to queue&hellip;
+          </div>
+        </div>
+      ) : (
+        <>
+
       {/* Title */}
       <div style={{ marginBottom: 22 }}>
         <input
@@ -527,6 +555,8 @@ export default function ReviewScreen({
               ? 'Create Permanent Note'
               : 'Save as Permanent Note'}
         </button>
+      )}
+        </>
       )}
     </div>
   )
