@@ -76,11 +76,11 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
                   style={{
                     ...rowStyle,
                     background: selected ? ACCENT.inkSoft : BG.raised,
-                    borderColor: selected ? ACCENT.ink : BORDER.base,
+                    borderColor: selected ? ACCENT.ink : BORDER.faint,
                   }}
                 >
                   <span style={{ fontSize: 12 }}>{ICONS[s.type]}</span>
-                  <span style={{ flex: 1, textAlign: 'left', fontSize: 12, color: selected ? TEXT.primary : TEXT.secondary, fontFamily: FONT.ui }}>
+                  <span style={{ flex: 1, textAlign: 'left', fontSize: 12, color: selected ? TEXT.primary : TEXT.secondary }}>
                     {s.label}
                   </span>
                   {selected && <span style={{ fontSize: 11, color: ACCENT.ink }}>✓</span>}
@@ -95,10 +95,9 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
               ...rowStyle,
               marginTop: 6,
               background: 'transparent',
-              border: `1px dashed ${BORDER.base}`,
+              border: `1px dashed ${BORDER.faint}`,
               color: TEXT.muted,
               fontSize: 12,
-              fontFamily: FONT.ui,
             }}
           >
             + Add new source
@@ -136,11 +135,10 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
                 background: ACCENT.ink,
                 color: BG.base,
                 border: 'none',
-                borderRadius: 5,
-                padding: '8px 0',
+                borderRadius: 10,
+                padding: '10px 0',
                 fontSize: 12,
                 fontWeight: 600,
-                fontFamily: FONT.ui,
                 cursor: 'pointer',
                 letterSpacing: '0.03em',
               }}
@@ -153,11 +151,10 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
               style={{
                 background: BG.raised,
                 color: TEXT.secondary,
-                border: `1px solid ${BORDER.base}`,
-                borderRadius: 5,
-                padding: '8px 14px',
+                border: `1px solid ${BORDER.faint}`,
+                borderRadius: 10,
+                padding: '10px 14px',
                 fontSize: 12,
-                fontFamily: FONT.ui,
                 cursor: 'pointer',
               }}
             >
@@ -173,9 +170,9 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   background: BG.raised,
-  border: `1px solid ${BORDER.base}`,
-  borderRadius: 5,
-  padding: '8px 10px',
+  border: `1px solid ${BORDER.faint}`,
+  borderRadius: 10,
+  padding: '10px 12px',
   color: TEXT.primary,
   fontSize: 12,
   outline: 'none',
@@ -184,10 +181,10 @@ const inputStyle: React.CSSProperties = {
 const rowStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 8,
-  padding: '7px 10px',
-  borderRadius: 5,
-  border: `1px solid ${BORDER.base}`,
+  gap: 10,
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: `1px solid ${BORDER.faint}`,
   cursor: 'pointer',
   width: '100%',
   background: BG.raised,

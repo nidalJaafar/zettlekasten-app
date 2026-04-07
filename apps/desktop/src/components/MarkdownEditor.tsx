@@ -1,6 +1,6 @@
 import CodeMirror from '@uiw/react-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
-import { BORDER } from '../theme'
+import { BG, BORDER } from '../theme'
 
 interface Props {
   value: string
@@ -11,22 +11,26 @@ interface Props {
 
 export default function MarkdownEditor({ value, onChange, placeholder, minHeight = '120px' }: Props) {
   return (
-    <div style={{
-      border: `1px solid ${BORDER.base}`,
-      borderRadius: 5,
-      overflow: 'hidden',
-    }}>
+    <div
+      style={{
+        border: `1px solid ${BORDER.faint}`,
+        borderRadius: 14,
+        overflow: 'hidden',
+        background: BG.panel,
+      }}
+    >
       <CodeMirror
         value={value}
         onChange={onChange}
         extensions={[markdown()]}
         placeholder={placeholder}
         theme="dark"
-        style={{ minHeight, fontSize: 13 }}
+        style={{ minHeight }}
         basicSetup={{
           lineNumbers: false,
           foldGutter: false,
           highlightActiveLine: false,
+          highlightSelectionMatches: false,
         }}
       />
     </div>

@@ -12,7 +12,6 @@ export const BORDER = {
   faint: '#232831',
   base: '#2b313c',
   strong: '#3a4350',
-  edge: '#38414c',
 } as const
 
 export const TEXT = {
@@ -28,7 +27,6 @@ export const ACCENT = {
   fleeting: '#9a7a5a',
   literature: '#6d8394',
   permanent: '#8d879f',
-  permanentSoft: 'rgba(141,135,159,0.12)',
   success: '#6d8e7a',
   danger: '#b06c68',
 } as const

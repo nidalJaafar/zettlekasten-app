@@ -30,13 +30,12 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
     return (
       <div style={{
         fontSize: 12,
-        color: TEXT.muted,
+        color: TEXT.faint,
         fontStyle: 'italic',
-        padding: '8px 0',
-        letterSpacing: '0.01em',
-        fontFamily: FONT.ui,
+        padding: '10px 0',
+        lineHeight: 1.7,
       }}>
-        No permanent notes yet — link requirement waived for first note.
+        No permanent notes yet. The first permanent note can be saved without links.
       </div>
     )
   }
@@ -50,14 +49,13 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
         style={{
           width: '100%',
           background: BG.raised,
-          border: `1px solid ${BORDER.base}`,
-          borderRadius: 5,
-          padding: '8px 10px',
+          border: `1px solid ${BORDER.faint}`,
+          borderRadius: 10,
+          padding: '10px 12px',
           color: TEXT.primary,
           fontSize: 12,
           outline: 'none',
-          marginBottom: 6,
-          fontFamily: FONT.ui,
+          marginBottom: 8,
         }}
       />
       <div style={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -71,11 +69,11 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                padding: '7px 10px',
-                borderRadius: 5,
-                border: `1px solid ${selected ? ACCENT.permanent : BORDER.base}`,
-                background: selected ? ACCENT.permanentSoft : BG.raised,
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: `1px solid ${selected ? ACCENT.permanent : BORDER.faint}`,
+                background: selected ? 'rgba(141,135,159,0.12)' : BG.raised,
                 cursor: 'pointer',
                 width: '100%',
                 textAlign: 'left',
@@ -83,16 +81,16 @@ export default function LinkPicker({ db, selectedIds, onToggle }: Props) {
             >
               <span style={{
                 fontSize: 10,
-                color: selected ? ACCENT.permanent : TEXT.muted,
+                color: selected ? ACCENT.permanent : TEXT.faint,
                 flexShrink: 0,
               }}>
                 {selected ? '◆' : '◇'}
               </span>
               <span style={{
                 fontFamily: FONT.display,
-                fontSize: 14,
+                fontSize: 16,
                 color: selected ? TEXT.primary : TEXT.secondary,
-                lineHeight: 1.3,
+                lineHeight: 1.4,
               }}>
                 {note.title}
               </span>

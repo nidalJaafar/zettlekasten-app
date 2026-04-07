@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import type { Note, NoteLink } from '@zettelkasten/core'
-import { BG, BORDER, TEXT, ACCENT } from '../theme'
 
 interface GraphNode extends d3.SimulationNodeDatum {
   id: string
@@ -58,7 +57,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
     const g = svg.append('g')
 
     // Zoom/pan
-    svg.on('.zoom', null)  // Remove any previously registered zoom handlers
+    svg.on('.zoom', null)
     svg.call(
       d3.zoom<SVGSVGElement, unknown>()
         .scaleExtent([0.2, 4])
@@ -78,8 +77,8 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
       .data(edges)
       .enter()
       .append('line')
-      .attr('stroke', BORDER.strong)
-      .attr('stroke-opacity', 0.6)
+      .attr('stroke', '#38414c')
+      .attr('stroke-opacity', 0.45)
       .attr('stroke-width', 1)
 
     const node = g.append('g')
@@ -103,15 +102,18 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
 
     node.append('circle')
       .attr('r', (d) => radiusScale(d.linkCount))
-      .attr('fill', BG.raised)
-      .attr('stroke', ACCENT.permanent)
+      .attr('fill', '#1d2128')
+      .attr('stroke', '#6d8394')
+      .attr('stroke-opacity', 0.55)
       .attr('stroke-width', 1)
 
     node.append('text')
-      .attr('dy', (d) => radiusScale(d.linkCount) + 13)
+      .attr('dy', (d) => radiusScale(d.linkCount) + 15)
       .attr('text-anchor', 'middle')
       .attr('font-size', 10)
-      .attr('fill', TEXT.faint)
+      .attr('font-family', 'Spline Sans, sans-serif')
+      .attr('letter-spacing', '0.04em')
+      .attr('fill', '#7f7a70')
       .text((d) => d.title.length > 24 ? d.title.slice(0, 24) + '…' : d.title)
 
     node.on('click', (_, d) => {
@@ -137,7 +139,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
 
     node.on('mouseout', () => {
       node.attr('opacity', 1)
-      link.attr('stroke-opacity', 0.4)
+      link.attr('stroke-opacity', 0.45)
     })
 
     simulation.on('tick', () => {
@@ -152,5 +154,5 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
     return () => { simulation.stop() }
   }, [notes, links, onNodeClick])
 
-  return <svg ref={svgRef} width="100%" height="100%" style={{ background: BG.canvas }} />
+  return <svg ref={svgRef} width="100%" height="100%" style={{ background: '#0d0f13' }} />
 }

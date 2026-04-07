@@ -31,12 +31,19 @@ export default function LibraryScreen({ db }: Props) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: BG.base }}>
       {/* Header */}
-      <div style={{ padding: '18px 24px 14px', borderBottom: `1px solid ${BORDER.faint}` }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: TEXT.primary, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
+      <div style={{ padding: '28px 32px 18px' }}>
+        <div style={{
+          fontFamily: FONT.display,
+          fontSize: 29,
+          fontWeight: 500,
+          color: TEXT.primary,
+          letterSpacing: '-0.015em',
+        }}>
           Library
         </div>
-        <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 2, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
-          {notes.length} processed note{notes.length !== 1 ? 's' : ''}
+        <div style={{ fontSize: 12, color: TEXT.secondary, marginTop: 6, lineHeight: 1.6 }}>
+          Processed literature notes, arranged like a working shelf.{' '}
+          {notes.length} item{notes.length !== 1 ? 's' : ''}.
         </div>
       </div>
 
@@ -44,10 +51,10 @@ export default function LibraryScreen({ db }: Props) {
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '14px 24px',
+        padding: '0 32px 32px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 4,
+        gap: 10,
       }}>
         {notes.length === 0 ? (
           <div style={{
@@ -56,7 +63,7 @@ export default function LibraryScreen({ db }: Props) {
             textAlign: 'center',
             marginTop: 48,
             letterSpacing: '0.01em',
-            fontFamily: FONT.ui,
+            fontStyle: 'italic',
           }}>
             No processed notes yet. Complete a review cycle to see notes here.
           </div>
@@ -69,9 +76,8 @@ export default function LibraryScreen({ db }: Props) {
                 className="library-card"
                 style={{
                   background: BG.raised,
-                  border: `1px solid ${BORDER.base}`,
-                  borderLeft: `3px solid ${ACCENT.literature}`,
-                  borderRadius: 5,
+                  border: `1px solid ${BORDER.faint}`,
+                  borderRadius: 12,
                   overflow: 'hidden',
                 }}
               >
@@ -80,8 +86,8 @@ export default function LibraryScreen({ db }: Props) {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
-                    padding: '11px 14px 11px 12px',
+                    gap: 16,
+                    padding: '16px 18px',
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
@@ -89,36 +95,50 @@ export default function LibraryScreen({ db }: Props) {
                     textAlign: 'left',
                   }}
                 >
+                  {/* Vertical accent bar */}
+                  <div style={{
+                    width: 6,
+                    alignSelf: 'stretch',
+                    borderRadius: 999,
+                    background: ACCENT.literature,
+                    opacity: 0.7,
+                    flexShrink: 0,
+                  }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontFamily: FONT.display,
-                      fontSize: 15,
+                      fontSize: 19,
                       fontWeight: 500,
                       color: TEXT.primary,
-                      lineHeight: 1.35,
-                      letterSpacing: '0.005em',
+                      lineHeight: 1.3,
                     }}>
                       {note.title}
                     </div>
-                    <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 3, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
+                    <div style={{
+                      fontSize: 11,
+                      color: TEXT.secondary,
+                      marginTop: 5,
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase',
+                    }}>
                       {note.source_label ?? 'No source'} · {formatDate(note.processed_at!)}
                     </div>
                   </div>
-                  <span style={{ color: TEXT.muted, fontSize: 10, flexShrink: 0 }}>
+                  <span style={{ color: TEXT.faint, fontSize: 10, flexShrink: 0 }}>
                     {expanded ? '▲' : '▼'}
                   </span>
                 </button>
                 {expanded && (
                   <div style={{
-                    padding: '10px 14px 14px 12px',
-                    fontFamily: FONT.mono,
-                    fontSize: 12,
+                    padding: '0 18px 18px 40px',
+                    fontFamily: FONT.display,
+                    fontSize: 15,
                     color: TEXT.secondary,
-                    lineHeight: 1.7,
+                    lineHeight: 1.85,
                     borderTop: `1px solid ${BORDER.faint}`,
                     whiteSpace: 'pre-wrap',
                   }}>
-                    {note.content || <span style={{ fontStyle: 'italic', color: TEXT.muted }}>No content.</span>}
+                    {note.content || <span style={{ fontStyle: 'italic', color: TEXT.faint }}>No content.</span>}
                   </div>
                 )}
               </div>

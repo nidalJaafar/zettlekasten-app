@@ -58,94 +58,109 @@ export default function InboxScreen({ db, onCountChange }: Props) {
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: BG.base }}>
       {/* Header */}
-      <div style={{
-        padding: '18px 24px 14px',
-        borderBottom: `1px solid ${BORDER.faint}`,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-      }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: TEXT.primary, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
-            Inbox
-          </div>
-          <div style={{ fontSize: 11, color: TEXT.muted, marginTop: 2, letterSpacing: '0.01em', fontFamily: FONT.ui }}>
-            {notes.length} fleeting note{notes.length !== 1 ? 's' : ''} to process
-          </div>
+      <div style={{ padding: '28px 32px 18px' }}>
+        <div style={{
+          fontFamily: FONT.display,
+          fontSize: 29,
+          fontWeight: 500,
+          color: TEXT.primary,
+          letterSpacing: '-0.015em',
+        }}>
+          Inbox
         </div>
-        <div ref={dropdownContainerRef} style={{ marginLeft: 'auto', position: 'relative' }}>
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="btn-new"
-            style={{
-              background: 'transparent',
-              color: TEXT.secondary,
-              border: `1px solid ${BORDER.base}`,
-              borderRadius: 5,
-              padding: '6px 14px',
-              fontSize: 12,
-              fontFamily: FONT.ui,
-              fontWeight: 400,
-              cursor: 'pointer',
-              letterSpacing: '0.02em',
-            }}
-          >
-            + New ▾
-          </button>
-          {showDropdown && (
-            <div style={{
-              position: 'absolute',
-              right: 0,
-              top: '110%',
-              background: BG.panel,
-              border: `1px solid ${BORDER.base}`,
-              borderRadius: 6,
-              padding: 4,
-              zIndex: 100,
-              minWidth: 180,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-            }}>
-              <button onClick={handleCreateLiterature} className="dropdown-item" style={dropdownItemStyle}>
-                Literature note
-              </button>
-              <button onClick={handleCreatePermanent} className="dropdown-item" style={dropdownItemStyle}>
-                Permanent note
-              </button>
-            </div>
-          )}
+        <div style={{ fontSize: 12, color: TEXT.secondary, marginTop: 6, lineHeight: 1.6 }}>
+          A quiet place for unfinished thoughts.{' '}
+          {notes.length} fleeting note{notes.length !== 1 ? 's' : ''} waiting.
         </div>
       </div>
 
-      {/* Quick capture */}
-      <div style={{ padding: '14px 24px', borderBottom: `1px solid ${BORDER.faint}` }}>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleCapture()}
-          placeholder="Capture a fleeting thought… (Enter to save)"
-          style={{
-            width: '100%',
-            background: 'transparent',
-            border: 'none',
-            borderBottom: `1px solid ${BORDER.base}`,
-            color: TEXT.primary,
-            fontSize: 13,
-            padding: '6px 0',
-            outline: 'none',
-            letterSpacing: '0.01em',
-            fontFamily: FONT.ui,
-          }}
-        />
+      {/* Capture card */}
+      <div style={{ padding: '0 32px 24px' }}>
+        <div style={{
+          background: BG.panel,
+          border: `1px solid ${BORDER.faint}`,
+          borderRadius: 16,
+          padding: '18px 18px 14px',
+        }}>
+          <div style={{
+            fontSize: 10,
+            color: TEXT.faint,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            marginBottom: 10,
+          }}>
+            Quick capture
+          </div>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleCapture()}
+            placeholder="Write a fleeting thought…"
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: TEXT.primary,
+              fontFamily: FONT.display,
+              fontSize: 22,
+              lineHeight: 1.4,
+              padding: '2px 0 10px',
+              outline: 'none',
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+            <span style={{ fontSize: 11, color: TEXT.faint }}>Press Enter to capture</span>
+            {/* Dropdown for direct note creation */}
+            <div ref={dropdownContainerRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="btn-new"
+                style={{
+                  background: 'transparent',
+                  color: TEXT.faint,
+                  border: 'none',
+                  padding: '4px 0',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                + New ▾
+              </button>
+              {showDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '110%',
+                  background: BG.panel,
+                  border: `1px solid ${BORDER.base}`,
+                  borderRadius: 10,
+                  padding: 4,
+                  zIndex: 100,
+                  minWidth: 180,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                }}>
+                  <button onClick={handleCreateLiterature} className="dropdown-item" style={dropdownItemStyle}>
+                    Literature note
+                  </button>
+                  <button onClick={handleCreatePermanent} className="dropdown-item" style={dropdownItemStyle}>
+                    Permanent note
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Notes list */}
       <div style={{
         flex: 1,
         overflowY: 'auto',
-        padding: '14px 24px',
+        padding: '0 32px 32px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 6,
+        gap: 10,
       }}>
         {notes.length === 0 ? (
           <div style={{
@@ -154,7 +169,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
             textAlign: 'center',
             marginTop: 48,
             letterSpacing: '0.01em',
-            fontFamily: FONT.ui,
+            fontStyle: 'italic',
           }}>
             Nothing in the inbox. Capture a thought above.
           </div>
@@ -171,14 +186,13 @@ export default function InboxScreen({ db, onCountChange }: Props) {
 const dropdownItemStyle: React.CSSProperties = {
   display: 'block',
   width: '100%',
-  padding: '8px 12px',
+  padding: '10px 12px',
   background: 'transparent',
   border: 'none',
   color: TEXT.secondary,
   fontSize: 12,
-  fontFamily: FONT.ui,
   textAlign: 'left',
   cursor: 'pointer',
-  borderRadius: 4,
-  letterSpacing: '0.02em',
+  borderRadius: 8,
+  letterSpacing: '0.03em',
 }

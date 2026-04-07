@@ -16,31 +16,35 @@ const items: { id: Screen; label: string }[] = [
 
 export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
   return (
-    <nav style={{
-      width: 152,
-      background: BG.panel,
-      borderRight: `1px solid ${BORDER.faint}`,
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '20px 0 16px',
-      flexShrink: 0,
-      userSelect: 'none',
-    }}>
+    <nav
+      style={{
+        width: 168,
+        background: BG.panel,
+        borderRight: `1px solid ${BORDER.faint}`,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '26px 0 18px',
+        flexShrink: 0,
+        userSelect: 'none',
+      }}
+    >
       {/* App monogram */}
-      <div style={{
-        padding: '0 20px 18px',
-        fontFamily: FONT.display,
-        fontSize: 28,
-        fontWeight: 700,
-        color: ACCENT.ink,
-        letterSpacing: '-0.01em',
-        lineHeight: 1,
-      }}>
+      <div
+        style={{
+          padding: '0 22px 18px',
+          fontFamily: FONT.display,
+          fontSize: 23,
+          fontWeight: 500,
+          color: TEXT.primary,
+          letterSpacing: '-0.01em',
+          lineHeight: 1,
+        }}
+      >
         Z
       </div>
 
       {/* Divider */}
-      <div style={{ height: 1, background: BORDER.faint, marginBottom: 8 }} />
+      <div style={{ height: 1, background: BORDER.faint, margin: '0 18px 10px' }} />
 
       {items.map((item) => {
         const active = current === item.id
@@ -52,44 +56,44 @@ export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 0,
-              padding: '9px 18px',
+              gap: 10,
+              padding: '9px 20px',
               border: 'none',
               background: 'transparent',
               cursor: 'pointer',
               width: '100%',
               textAlign: 'left',
               position: 'relative',
-              color: active ? ACCENT.ink : TEXT.muted,
-              fontSize: 13,
-              fontFamily: FONT.ui,
-              fontWeight: active ? 500 : 400,
-              letterSpacing: '0.01em',
+              color: active ? TEXT.primary : TEXT.muted,
+              fontSize: 12,
+              fontWeight: 500,
+              letterSpacing: '0.02em',
             }}
           >
-            {/* Active left bar */}
             {active && (
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                top: 6,
-                bottom: 6,
-                width: 2,
-                background: ACCENT.ink,
-                borderRadius: '0 1px 1px 0',
-              }} />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 14,
+                  top: '50%',
+                  width: 4,
+                  height: 4,
+                  marginTop: -2,
+                  borderRadius: '50%',
+                  background: ACCENT.ink,
+                }}
+              />
             )}
-            <span style={{ flex: 1 }}>{item.label}</span>
+            <span style={{ flex: 1, paddingLeft: active ? 10 : 0 }}>{item.label}</span>
             {item.id === 'inbox' && inboxCount > 0 && (
-              <span style={{
-                background: ACCENT.inkSoft,
-                color: TEXT.secondary,
-                fontSize: 10,
-                fontWeight: 600,
-                padding: '1px 6px',
-                borderRadius: 10,
-                lineHeight: 1.8,
-              }}>
+              <span
+                style={{
+                  color: TEXT.secondary,
+                  fontSize: 10,
+                  padding: '0 0 0 8px',
+                  lineHeight: 1.4,
+                }}
+              >
                 {inboxCount}
               </span>
             )}
@@ -98,15 +102,16 @@ export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
       })}
 
       {/* Wordmark footer */}
-      <div style={{
-        marginTop: 'auto',
-        padding: '0 18px',
-        fontSize: 9,
-        color: TEXT.faint,
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        fontFamily: FONT.ui,
-      }}>
+      <div
+        style={{
+          marginTop: 'auto',
+          padding: '0 20px',
+          fontSize: 9,
+          color: TEXT.faint,
+          letterSpacing: '0.16em',
+          textTransform: 'uppercase',
+        }}
+      >
         Zettelkasten
       </div>
     </nav>
