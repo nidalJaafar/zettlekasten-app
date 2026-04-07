@@ -473,6 +473,7 @@ export default function ReviewScreen({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{
+              display: 'inline-block',
               fontFamily: FONT.mono,
               fontSize: 11,
               color: ownWords ? ACCENT.success : TEXT.faint,
@@ -488,6 +489,7 @@ export default function ReviewScreen({
           {totalPermanentNotes > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{
+                display: 'inline-block',
                 fontFamily: FONT.mono,
                 fontSize: 11,
                 color: linkedIds.length > 0 ? ACCENT.success : TEXT.faint,
