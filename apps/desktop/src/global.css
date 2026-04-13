@@ -145,3 +145,18 @@ input, select, textarea, button {
 .cm-focused {
   outline: none !important;
 }
+
+.workspace-pane button,
+.workspace-pane input,
+.workspace-pane textarea {
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+.workspace-pane button:hover {
+  border-color: #3a4350 !important;
+}
+
+.workspace-pane input::placeholder,
+.workspace-pane textarea::placeholder {
+  color: #5e5b55;
+}

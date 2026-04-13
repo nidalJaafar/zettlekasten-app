@@ -40,6 +40,11 @@ export default function InboxScreen({ db, onCountChange }: Props) {
     await loadNotes()
   }
 
+  function handleOpen(note: Note) {
+    const event = new CustomEvent('zettel:open-note', { detail: note })
+    window.dispatchEvent(event)
+  }
+
   function handleProcess(note: Note) {
     const event = new CustomEvent('zettel:review', { detail: note })
     window.dispatchEvent(event)
@@ -175,7 +180,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
           </div>
         ) : (
           notes.map((note) => (
-            <NoteCard key={note.id} note={note} onProcess={handleProcess} />
+            <NoteCard key={note.id} note={note} onOpen={handleOpen} onProcess={handleProcess} />
           ))
         )}
       </div>

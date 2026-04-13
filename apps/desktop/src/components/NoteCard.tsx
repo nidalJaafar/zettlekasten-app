@@ -3,7 +3,8 @@ import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface Props {
   note: Note
-  onProcess: (note: Note) => void
+  onOpen: (note: Note) => void
+  onProcess?: (note: Note) => void
 }
 
 function timeAgo(ts: number): string {
@@ -16,7 +17,7 @@ function timeAgo(ts: number): string {
   return `${days}d ago`
 }
 
-export default function NoteCard({ note, onProcess }: Props) {
+export default function NoteCard({ note, onOpen, onProcess }: Props) {
   return (
     <div
       className="note-card"
@@ -30,12 +31,25 @@ export default function NoteCard({ note, onProcess }: Props) {
         gap: 14,
       }}
     >
-      {/* Type dot */}
       <div style={{ width: 6, paddingTop: 8, flexShrink: 0 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT.fleeting, opacity: 0.8 }} />
       </div>
 
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <button
+        data-testid="note-open"
+        onClick={() => onOpen(note)}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          textAlign: 'left',
+          color: 'inherit',
+          font: 'inherit',
+        }}
+      >
         <div
           style={{
             fontFamily: FONT.display,
@@ -68,27 +82,29 @@ export default function NoteCard({ note, onProcess }: Props) {
         <div style={{ fontSize: 10, color: TEXT.faint, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           {timeAgo(note.created_at)}
         </div>
-      </div>
-
-      <button
-        onClick={() => onProcess(note)}
-        className="process-btn"
-        style={{
-          background: 'transparent',
-          color: TEXT.secondary,
-          border: 'none',
-          padding: '5px 0',
-          fontSize: 11,
-          fontWeight: 500,
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-          flexShrink: 0,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-        }}
-      >
-        Process
       </button>
+
+      {onProcess && (
+        <button
+          onClick={() => onProcess(note)}
+          className="process-btn"
+          style={{
+            background: 'transparent',
+            color: TEXT.secondary,
+            border: 'none',
+            padding: '5px 0',
+            fontSize: 11,
+            fontWeight: 500,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Process
+        </button>
+      )}
     </div>
   )
 }

@@ -17,9 +17,12 @@ interface Props {
   notes: Note[]
   links: NoteLink[]
   onNodeClick: (note: Note) => void
+  focusNoteId?: string
+  selectedNoteId?: string
+  mode?: 'context' | 'full'
 }
 
-export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
+export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, selectedNoteId, mode }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
@@ -43,6 +46,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
       id: n.id,
       title: n.title,
       linkCount: linkCountMap.get(n.id) ?? 0,
+      ...(focusNoteId === n.id ? { fx: width / 2, fy: height / 2 } : {}),
     }))
 
     const edges: GraphEdge[] = links.map((l) => ({
@@ -64,9 +68,12 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
         .on('zoom', (event) => g.attr('transform', event.transform))
     )
 
+    const linkDistance = mode === 'context' ? 50 : 80
+    const chargeStrength = mode === 'context' ? -150 : -80
+
     const simulation = d3.forceSimulation<GraphNode>(nodes)
-      .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id((d) => d.id).distance(80))
-      .force('charge', d3.forceManyBody().strength(-80))
+      .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id((d) => d.id).distance(linkDistance))
+      .force('charge', d3.forceManyBody().strength(chargeStrength))
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide<GraphNode>().radius((d) => radiusScale(d.linkCount) + 4))
       .alphaDecay(0.04)
@@ -102,10 +109,10 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
 
     node.append('circle')
       .attr('r', (d) => radiusScale(d.linkCount))
-      .attr('fill', '#1d2128')
-      .attr('stroke', '#6d8394')
-      .attr('stroke-opacity', 0.55)
-      .attr('stroke-width', 1)
+      .attr('fill', (d) => d.id === selectedNoteId ? '#222730' : '#1d2128')
+      .attr('stroke', (d) => d.id === selectedNoteId ? '#b4ab99' : '#6d8394')
+      .attr('stroke-opacity', (d) => d.id === selectedNoteId ? 0.9 : 0.55)
+      .attr('stroke-width', (d) => d.id === selectedNoteId ? 1.4 : 1)
 
     node.append('text')
       .attr('dy', (d) => radiusScale(d.linkCount) + 15)
@@ -152,7 +159,7 @@ export default function GraphCanvas({ notes, links, onNodeClick }: Props) {
     })
 
     return () => { simulation.stop() }
-  }, [notes, links, onNodeClick])
+  }, [notes, links, onNodeClick, focusNoteId, selectedNoteId, mode])
 
   return <svg ref={svgRef} width="100%" height="100%" style={{ background: '#0d0f13' }} />
 }

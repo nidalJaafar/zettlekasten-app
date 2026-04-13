@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { getNotesByType, getAllLinks } from '@zettelkasten/core'
 import type { Database, Note, NoteLink } from '@zettelkasten/core'
+import type { WorkspaceTarget } from '../App'
 import GraphCanvas from '../components/GraphCanvas'
 import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface Props {
   db: Database
+  workspaceTarget?: WorkspaceTarget | null
+  onOpenNoteId?: (noteId: string) => Promise<void>
 }
 
-export default function GraphScreen({ db }: Props) {
+export default function GraphScreen({ db, workspaceTarget, onOpenNoteId }: Props) {
   const [notes, setNotes] = useState<Note[]>([])
   const [links, setLinks] = useState<NoteLink[]>([])
   const [selected, setSelected] = useState<Note | null>(null)
@@ -38,6 +41,14 @@ export default function GraphScreen({ db }: Props) {
     }
   }, [selected, visibleNoteIds])
 
+  useEffect(() => {
+    if (workspaceTarget?.mode !== 'note') return
+    const targetNote = notes.find((note) => note.id === workspaceTarget.noteId)
+    if (targetNote) {
+      setSelected(targetNote)
+    }
+  }, [notes, workspaceTarget])
+
   if (!loaded) return null
   if (notes.length === 0) {
     return (
@@ -57,9 +68,18 @@ export default function GraphScreen({ db }: Props) {
     )
   }
 
+  const selectedNoteId = selected?.id
+
   return (
     <div style={{ position: 'relative', height: '100%' }}>
-      <GraphCanvas notes={filtered} links={visibleLinks} onNodeClick={setSelected} />
+      <GraphCanvas
+        notes={filtered}
+        links={visibleLinks}
+        onNodeClick={setSelected}
+        focusNoteId={selectedNoteId}
+        selectedNoteId={selectedNoteId}
+        mode="full"
+      />
 
       {/* Search overlay */}
       <div style={{ position: 'absolute', top: 22, left: 22, display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -143,10 +163,7 @@ export default function GraphScreen({ db }: Props) {
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
-              onClick={() => {
-                const event = new CustomEvent('zettel:open-note', { detail: selected })
-                window.dispatchEvent(event)
-              }}
+              onClick={() => void onOpenNoteId?.(selected.id)}
               className="btn-inspect"
               style={{
                 flex: 1,

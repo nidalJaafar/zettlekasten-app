@@ -1,31 +1,44 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getDb } from './db'
-import { getNotesByType, runMigrations } from '@zettelkasten/core'
+import { getNoteById, getNotesByType, runMigrations } from '@zettelkasten/core'
 import type { Database, Note } from '@zettelkasten/core'
 import Sidebar from './components/Sidebar'
 import InboxScreen from './screens/InboxScreen'
 import ReviewScreen from './screens/ReviewScreen'
 import GraphScreen from './screens/GraphScreen'
 import LibraryScreen from './screens/LibraryScreen'
-import NoteModal from './components/NoteModal'
+import NoteWorkspace from './components/workspace/NoteWorkspace'
 
-export type Screen = 'inbox' | 'review' | 'library' | 'graph'
-type ReviewDraftType = 'literature' | 'permanent'
+export type Screen = 'inbox' | 'workspace' | 'review' | 'library' | 'graph'
+
+export type WorkspaceTarget =
+  | { mode: 'note'; noteId: string }
+  | { mode: 'draft'; noteType: 'literature' | 'permanent' }
 
 export default function App() {
   const [db, setDb] = useState<Database | null>(null)
   const [dbError, setDbError] = useState<string | null>(null)
   const [screen, setScreen] = useState<Screen>('inbox')
   const [inboxCount, setInboxCount] = useState(0)
-  const [pendingReviewNote, setPendingReviewNote] = useState<Note | null>(null)
-  const [reviewDraftType, setReviewDraftType] = useState<ReviewDraftType | null>(null)
-  const [openNote, setOpenNote] = useState<Note | null>(null)
+  const [workspaceTarget, setWorkspaceTarget] = useState<WorkspaceTarget | null>(null)
 
   const refreshInboxCount = useCallback(async () => {
     if (!db) return
     const fleeting = await getNotesByType(db, 'fleeting')
     setInboxCount(fleeting.length)
   }, [db])
+
+  const openWorkspaceNote = useCallback((note: Note) => {
+    setWorkspaceTarget({ mode: 'note', noteId: note.id })
+    setScreen('workspace')
+  }, [])
+
+  const openWorkspaceById = useCallback(async (noteId: string) => {
+    if (!db) return
+    const note = await getNoteById(db, noteId)
+    if (!note) return
+    openWorkspaceNote(note)
+  }, [db, openWorkspaceNote])
 
   useEffect(() => {
     getDb().then(async (database) => {
@@ -45,23 +58,19 @@ export default function App() {
   useEffect(() => {
     const handleReview = (e: Event) => {
       const note = (e as CustomEvent<Note>).detail
-      setReviewDraftType(null)
-      setPendingReviewNote(note)
-      setScreen('review')
+      openWorkspaceNote(note)
     }
     const handleNewLiterature = () => {
-      setPendingReviewNote(null)
-      setReviewDraftType('literature')
-      setScreen('review')
+      setWorkspaceTarget({ mode: 'draft', noteType: 'literature' })
+      setScreen('workspace')
     }
     const handleNewPermanent = () => {
-      setPendingReviewNote(null)
-      setReviewDraftType('permanent')
-      setScreen('review')
+      setWorkspaceTarget({ mode: 'draft', noteType: 'permanent' })
+      setScreen('workspace')
     }
     const handleOpenNote = (e: Event) => {
       const note = (e as CustomEvent<Note>).detail
-      setOpenNote(note)
+      openWorkspaceNote(note)
     }
     window.addEventListener('zettel:review', handleReview)
     window.addEventListener('zettel:new-literature', handleNewLiterature)
@@ -73,7 +82,7 @@ export default function App() {
       window.removeEventListener('zettel:new-permanent', handleNewPermanent)
       window.removeEventListener('zettel:open-note', handleOpenNote)
     }
-  }, [])
+  }, [openWorkspaceNote])
 
   if (dbError) {
     return (
@@ -96,22 +105,24 @@ export default function App() {
       <Sidebar current={screen} onNavigate={setScreen} inboxCount={inboxCount} />
       <main style={{ flex: 1, overflow: 'hidden' }}>
         {screen === 'inbox' && <InboxScreen db={db} onCountChange={setInboxCount} />}
-        {screen === 'review' && (
-          <ReviewScreen
+        {screen === 'workspace' && (
+          <NoteWorkspace
             db={db}
-            pendingNote={pendingReviewNote}
-            draftType={reviewDraftType}
-            onDraftConsumed={() => setReviewDraftType(null)}
-            onNoteConsumed={() => setPendingReviewNote(null)}
+            target={workspaceTarget}
+            onOpenNoteId={openWorkspaceById}
+            onOpenTarget={setWorkspaceTarget}
             onInboxCountChange={refreshInboxCount}
           />
         )}
+        {screen === 'review' && (
+          <ReviewScreen
+            db={db}
+            onOpenNoteId={openWorkspaceById}
+          />
+        )}
         {screen === 'library' && <LibraryScreen db={db} />}
-        {screen === 'graph' && <GraphScreen db={db} />}
+        {screen === 'graph' && <GraphScreen db={db} workspaceTarget={workspaceTarget} onOpenNoteId={openWorkspaceById} />}
       </main>
-      {openNote && (
-        <NoteModal db={db} note={openNote} onClose={() => setOpenNote(null)} />
-      )}
     </div>
   )
 }

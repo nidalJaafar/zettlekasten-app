@@ -7,9 +7,10 @@ interface Props {
   onChange: (value: string) => void
   placeholder?: string
   minHeight?: string
+  readOnly?: boolean
 }
 
-export default function MarkdownEditor({ value, onChange, placeholder, minHeight = '120px' }: Props) {
+export default function MarkdownEditor({ value, onChange, placeholder, minHeight = '120px', readOnly = false }: Props) {
   return (
     <div
       style={{
@@ -22,6 +23,8 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
       <CodeMirror
         value={value}
         onChange={onChange}
+        editable={!readOnly}
+        readOnly={readOnly}
         extensions={[markdown()]}
         placeholder={placeholder}
         theme="dark"
