@@ -37,6 +37,19 @@ const mockNote: Note = {
   deleted_at: null,
 }
 
+const secondMockNote: Note = {
+  id: 'note-43',
+  title: 'Saved with body',
+  content: 'Freshly captured body',
+  type: 'fleeting',
+  created_at: Date.now() + 1,
+  updated_at: Date.now() + 1,
+  source_id: null,
+  own_words_confirmed: 0,
+  processed_at: null,
+  deleted_at: null,
+}
+
 describe('InboxScreen', () => {
   let container: HTMLDivElement
   let root: Root
@@ -194,6 +207,24 @@ describe('InboxScreen', () => {
     })
   })
 
+  it('does not move from title to body while IME composition is active', async () => {
+    await renderScreen()
+
+    const titleInput = getTitleInput()
+
+    await act(async () => {
+      titleInput.focus()
+      setInputValue(titleInput, 'Composing title')
+      const composingEnter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+      Object.defineProperty(composingEnter, 'isComposing', { value: true })
+      titleInput.dispatchEvent(composingEnter)
+      await flushEffects()
+    })
+
+    expect(getBodyInput()).toBeTruthy()
+    expect(document.activeElement).toBe(titleInput)
+  })
+
   it('captures from the body field with ctrl+enter', async () => {
     vi.mocked(createNote).mockResolvedValue(mockNote)
 
@@ -241,5 +272,37 @@ describe('InboxScreen', () => {
     })
 
     expect(createNote).not.toHaveBeenCalled()
+  })
+
+  it('reloads notes and clears capture fields after saving a note with body', async () => {
+    vi.mocked(createNote).mockResolvedValue(secondMockNote)
+    vi.mocked(getNotesByType)
+      .mockResolvedValueOnce([mockNote])
+      .mockResolvedValueOnce([mockNote, secondMockNote])
+
+    await renderScreen()
+
+    const titleInput = getTitleInput()
+
+    await act(async () => {
+      setInputValue(titleInput, 'Saved with body')
+      titleInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await flushEffects()
+    })
+
+    const bodyInput = getBodyInput()
+    expect(bodyInput).toBeTruthy()
+
+    await act(async () => {
+      setInputValue(bodyInput!, 'Freshly captured body')
+      bodyInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true }))
+      await flushEffects()
+    })
+
+    expect(getNotesByType).toHaveBeenCalledTimes(2)
+    expect(titleInput.value).toBe('')
+    expect(getBodyInput()).toBeNull()
+    expect(container.textContent).toContain('2 fleeting notes waiting.')
+    expect(container.textContent).toContain('Saved with body')
   })
 })
