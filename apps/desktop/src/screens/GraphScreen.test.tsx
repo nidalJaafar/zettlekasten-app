@@ -8,6 +8,8 @@ const graphCanvasState = vi.hoisted(() => ({
   mountCount: 0,
   unmountCount: 0,
   lastProps: null as null | {
+    notes: Note[]
+    links: NoteLink[]
     focusNoteId?: string
     selectedNoteId?: string
     onNodeClick: (note: Note) => void
@@ -23,7 +25,7 @@ vi.mock('../components/GraphCanvas', async () => {
   const React = await import('react')
 
   return {
-    default: ({ focusNoteId, selectedNoteId, onNodeClick }: typeof graphCanvasState.lastProps) => {
+    default: ({ notes, links, focusNoteId, selectedNoteId, onNodeClick }: typeof graphCanvasState.lastProps) => {
       React.useEffect(() => {
         graphCanvasState.mountCount += 1
         return () => {
@@ -31,7 +33,7 @@ vi.mock('../components/GraphCanvas', async () => {
         }
       }, [])
 
-      graphCanvasState.lastProps = { focusNoteId, selectedNoteId, onNodeClick }
+      graphCanvasState.lastProps = { notes, links, focusNoteId, selectedNoteId, onNodeClick }
 
       return (
         <div data-testid="graph-canvas">
@@ -137,6 +139,8 @@ describe('GraphScreen', () => {
     expect(graphCanvasState.unmountCount).toBe(0)
     expect(graphCanvasState.lastProps?.focusNoteId).toBeUndefined()
     expect(graphCanvasState.lastProps?.selectedNoteId).toBeUndefined()
+    const initialNotesRef = graphCanvasState.lastProps?.notes
+    const initialLinksRef = graphCanvasState.lastProps?.links
 
     await act(async () => {
       clickButton(container, 'Select first')
@@ -149,6 +153,8 @@ describe('GraphScreen', () => {
     expect(graphCanvasState.unmountCount).toBe(0)
     expect(graphCanvasState.lastProps?.selectedNoteId).toBe('note-1')
     expect(graphCanvasState.lastProps?.focusNoteId).toBeUndefined()
+    expect(graphCanvasState.lastProps?.notes).toBe(initialNotesRef)
+    expect(graphCanvasState.lastProps?.links).toBe(initialLinksRef)
 
     await act(async () => {
       clickButton(container, 'Select second')
@@ -161,6 +167,8 @@ describe('GraphScreen', () => {
     expect(graphCanvasState.unmountCount).toBe(0)
     expect(graphCanvasState.lastProps?.selectedNoteId).toBe('note-2')
     expect(graphCanvasState.lastProps?.focusNoteId).toBeUndefined()
+    expect(graphCanvasState.lastProps?.notes).toBe(initialNotesRef)
+    expect(graphCanvasState.lastProps?.links).toBe(initialLinksRef)
   })
 
   it('passes parent-driven workspace selection as graph focus', async () => {

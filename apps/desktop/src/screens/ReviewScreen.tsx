@@ -83,6 +83,7 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
           {queue.map((note) => (
             <div
               key={note.id}
+              className="library-card"
               role="button"
               tabIndex={0}
               onClick={() => void onOpenNoteId(note.id)}

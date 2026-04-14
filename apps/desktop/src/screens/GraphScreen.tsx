@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getNotesByType, getAllLinks } from '@zettelkasten/core'
 import type { Database, Note, NoteLink } from '@zettelkasten/core'
 import type { WorkspaceTarget } from '../App'
@@ -26,13 +26,22 @@ export default function GraphScreen({ db, workspaceTarget, onOpenNoteId }: Props
     })
   }, [db])
 
-  const filtered = query
-    ? notes.filter((n) => n.title.toLowerCase().includes(query.toLowerCase()))
-    : notes
+  const filtered = useMemo(() => (
+    query
+      ? notes.filter((n) => n.title.toLowerCase().includes(query.toLowerCase()))
+      : notes
+  ), [notes, query])
 
-  const visibleNoteIds = new Set(filtered.map((note) => note.id))
-  const visibleLinks = links.filter(
-    (link) => visibleNoteIds.has(link.from_note_id) && visibleNoteIds.has(link.to_note_id)
+  const visibleNoteIds = useMemo(
+    () => new Set(filtered.map((note) => note.id)),
+    [filtered],
+  )
+
+  const visibleLinks = useMemo(
+    () => links.filter(
+      (link) => visibleNoteIds.has(link.from_note_id) && visibleNoteIds.has(link.to_note_id),
+    ),
+    [links, visibleNoteIds],
   )
   const focusedNoteId =
     workspaceTarget?.mode === 'note' && notes.some((note) => note.id === workspaceTarget.noteId)

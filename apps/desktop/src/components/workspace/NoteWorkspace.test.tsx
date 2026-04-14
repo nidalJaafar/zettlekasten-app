@@ -527,7 +527,7 @@ describe('NoteWorkspace', () => {
 
   it('uses compact layout controls and hides supporting panes until opened on narrow screens', async () => {
     const db = createFakeDb()
-    setViewportWidth(900)
+    setViewportWidth(1150)
 
     await act(async () => {
       root.render(
@@ -571,7 +571,7 @@ describe('NoteWorkspace', () => {
 
   it('restores the wide three-column layout after leaving compact mode', async () => {
     const db = createFakeDb()
-    setViewportWidth(900)
+    setViewportWidth(1150)
 
     await act(async () => {
       root.render(

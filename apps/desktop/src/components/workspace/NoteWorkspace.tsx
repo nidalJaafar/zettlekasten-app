@@ -41,7 +41,7 @@ export const EMPTY_DRAFT: WorkspaceDraft = {
   linkedIds: [],
 }
 
-const COMPACT_WORKSPACE_BREAKPOINT = 1080
+const COMPACT_WORKSPACE_BREAKPOINT = 1200
 const COMPACT_DRAWER_OVERLAY = `${BG.canvas}b8`
 const COMPACT_DRAWER_SHADOW = `0 0 32px ${BG.canvas}`
 

@@ -243,6 +243,7 @@ describe('ReviewScreen', () => {
     expect(cards).toHaveLength(2)
 
     for (const [index, card] of cards.entries()) {
+      expect((card as HTMLElement).className).toContain('library-card')
       expect((card as HTMLElement).style.flexDirection).toBe('row')
 
       const accent = card.querySelector('[data-testid="review-card-accent"]') as HTMLElement | null
