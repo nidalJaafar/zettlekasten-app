@@ -222,6 +222,23 @@ describe('note-workflow helpers', () => {
 
     expect(await getNoteById(db, renamed.id)).toMatchObject({ title: 'New Title' })
   })
+
+  it('allows a newly created fleeting note title to be used as a wikilink target', async () => {
+    const consumer = await createNote(db, { type: 'permanent', title: 'Consumer', content: 'Body' })
+    const created = await createNote(db, { type: 'fleeting', title: 'New Linked Note' })
+
+    const updatedContent = 'See [[New Linked Note]] for details.'
+    await savePersistedNote(db, consumer, { title: consumer.title, content: updatedContent })
+
+    const saved = await getNoteById(db, consumer.id)
+    expect(saved?.content).toBe(updatedContent)
+
+    const resolved = await db.queryOne<{ id: string }>(
+      'SELECT id FROM notes WHERE title = ? AND deleted_at IS NULL',
+      ['New Linked Note']
+    )
+    expect(resolved?.id).toBe(created.id)
+  })
 })
 
 async function insertSource(db: Database): Promise<string> {
