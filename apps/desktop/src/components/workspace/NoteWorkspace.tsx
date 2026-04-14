@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createNote, getLinkedNoteIds, getNoteById, softDeleteNote, type Database, type Note } from '@zettelkasten/core'
 import type { WorkspaceTarget } from '../../App'
-import { BG, BORDER } from '../../theme'
+import { ACCENT, BG, BORDER, TEXT } from '../../theme'
 import {
   createPermanentDraft,
   promoteFleetingToLiterature,
@@ -41,6 +41,8 @@ export const EMPTY_DRAFT: WorkspaceDraft = {
   linkedIds: [],
 }
 
+const COMPACT_WORKSPACE_BREAKPOINT = 1080
+
 function createDraftFromNote(note: Note): WorkspaceDraft {
   return {
     title: note.title,
@@ -77,6 +79,25 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
   const targetVersion = useRef(0)
   const isDraftTarget = target?.mode === 'draft'
   const isEditable = Boolean(target)
+  const [isCompact, setIsCompact] = useState(() => window.innerWidth < COMPACT_WORKSPACE_BREAKPOINT)
+  const [openCompactPanel, setOpenCompactPanel] = useState<'rail' | 'context' | null>(null)
+
+  useEffect(() => {
+    function syncCompactMode() {
+      setIsCompact(window.innerWidth < COMPACT_WORKSPACE_BREAKPOINT)
+    }
+
+    window.addEventListener('resize', syncCompactMode)
+    return () => {
+      window.removeEventListener('resize', syncCompactMode)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isCompact) {
+      setOpenCompactPanel(null)
+    }
+  }, [isCompact])
 
   useEffect(() => {
     let cancelled = false
@@ -335,6 +356,61 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
     }
   }
 
+  const railContent = (
+    <div
+      data-testid="workspace-rail-pane"
+      style={{ width: isCompact ? '100%' : railPane.width, flexShrink: 0, borderRight: `1px solid ${BORDER.faint}`, overflow: 'auto' }}
+    >
+      <WorkspaceRail db={db} activeNoteId={loadedNote?.id ?? null} onOpenNoteId={onOpenNoteId} />
+    </div>
+  )
+
+  const contextContent = (
+    <div data-testid="workspace-context-pane" style={{
+      width: isCompact ? '100%' : contextPane.width,
+      flexShrink: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 0,
+      borderLeft: isCompact ? 'none' : `1px solid ${BORDER.faint}`,
+      overflow: 'hidden',
+    }}>
+      <div style={{ flex: '1 1 0%', overflow: 'auto', minHeight: 0 }}>
+        <NoteContextPane
+          db={db}
+          note={loadedNote}
+          draftType={target?.mode === 'draft' ? target.noteType : null}
+          sourceId={draft.sourceId}
+          ownWords={draft.ownWords}
+          linkedIds={draft.linkedIds}
+          error={error}
+          onSourceIdChange={(sourceId) => {
+            setDraft((current) => ({ ...current, sourceId }))
+          }}
+          onOwnWordsChange={(ownWords) => {
+            setDraft((current) => ({ ...current, ownWords }))
+          }}
+          onToggleLink={(noteId) => {
+            setDraft((current) => ({
+              ...current,
+              linkedIds: current.linkedIds.includes(noteId)
+                ? current.linkedIds.filter((id) => id !== noteId)
+                : [...current.linkedIds, noteId],
+            }))
+          }}
+          onPromoteToLiterature={handlePromoteToLiterature}
+          onSaveAsPermanent={handleSaveAsPermanent}
+          onDeleteNote={loadedNote ? handleDeleteNote : undefined}
+        />
+      </div>
+      {loadedNote && (
+        <div style={{ borderTop: `1px solid ${BORDER.faint}`, padding: 12, flexShrink: 0 }}>
+          <ContextGraph db={db} activeNote={loadedNote} onOpenNoteId={(id) => { void onOpenNoteId(id) }} />
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div
       className="workspace-pane"
@@ -344,23 +420,73 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         background: BG.base,
         minHeight: 0,
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
-      <div
-        data-testid="workspace-rail-pane"
-        style={{ width: railPane.width, flexShrink: 0, borderRight: `1px solid ${BORDER.faint}`, overflow: 'auto' }}
-      >
-        <WorkspaceRail db={db} activeNoteId={loadedNote?.id ?? null} onOpenNoteId={onOpenNoteId} />
-      </div>
+      {!isCompact && railContent}
 
-      <div
-        data-testid="workspace-rail-resize-handle"
-        {...railPane.handleProps}
-        aria-label="Resize workspace rail"
-        className={`pane-resize-handle workspace-resize-handle${railPane.isDragging ? ' is-dragging' : ''}`}
-      />
+      {!isCompact && (
+        <div
+          data-testid="workspace-rail-resize-handle"
+          {...railPane.handleProps}
+          aria-label="Resize workspace rail"
+          className={`pane-resize-handle workspace-resize-handle${railPane.isDragging ? ' is-dragging' : ''}`}
+        />
+      )}
 
-      <div style={{ flex: '1 1 0%', minWidth: 0, minHeight: 0, overflow: 'auto' }}>
+      <div style={{ flex: '1 1 0%', minWidth: 0, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {isCompact && (
+          <div
+            className="workspace-compact-toolbar"
+            style={{
+              display: 'flex',
+              gap: 8,
+              padding: 12,
+              borderBottom: `1px solid ${BORDER.faint}`,
+              background: BG.panel,
+              position: 'sticky',
+              top: 0,
+              zIndex: 1,
+            }}
+          >
+            <button
+              type="button"
+              className="workspace-compact-toggle"
+              aria-label={`${openCompactPanel === 'rail' ? 'Hide' : 'Show'} notes panel`}
+              aria-pressed={openCompactPanel === 'rail'}
+              onClick={() => {
+                setOpenCompactPanel((current) => (current === 'rail' ? null : 'rail'))
+              }}
+              style={{
+                border: `1px solid ${openCompactPanel === 'rail' ? ACCENT.ink : BORDER.base}`,
+                background: openCompactPanel === 'rail' ? ACCENT.inkSoft : BG.raised,
+                color: TEXT.primary,
+                borderRadius: 999,
+                padding: '8px 12px',
+              }}
+            >
+              Notes
+            </button>
+            <button
+              type="button"
+              className="workspace-compact-toggle"
+              aria-label={`${openCompactPanel === 'context' ? 'Hide' : 'Show'} context panel`}
+              aria-pressed={openCompactPanel === 'context'}
+              onClick={() => {
+                setOpenCompactPanel((current) => (current === 'context' ? null : 'context'))
+              }}
+              style={{
+                border: `1px solid ${openCompactPanel === 'context' ? ACCENT.ink : BORDER.base}`,
+                background: openCompactPanel === 'context' ? ACCENT.inkSoft : BG.raised,
+                color: TEXT.primary,
+                borderRadius: 999,
+                padding: '8px 12px',
+              }}
+            >
+              Context
+            </button>
+          </div>
+        )}
         <DocumentPane
           key={target ? (target.mode === 'draft' ? `draft:${target.noteType}` : `note:${target.noteId}`) : 'workspace-empty'}
           title={draft.title}
@@ -382,56 +508,45 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         />
       </div>
 
-      <div
-        data-testid="workspace-context-resize-handle"
-        {...contextPane.handleProps}
-        aria-label="Resize workspace context"
-        className={`pane-resize-handle workspace-resize-handle${contextPane.isDragging ? ' is-dragging' : ''}`}
-      />
+      {!isCompact && (
+        <div
+          data-testid="workspace-context-resize-handle"
+          {...contextPane.handleProps}
+          aria-label="Resize workspace context"
+          className={`pane-resize-handle workspace-resize-handle${contextPane.isDragging ? ' is-dragging' : ''}`}
+        />
+      )}
 
-      <div data-testid="workspace-context-pane" style={{
-        width: contextPane.width,
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
-        borderLeft: `1px solid ${BORDER.faint}`,
-        overflow: 'hidden',
-      }}>
-        <div style={{ flex: '1 1 0%', overflow: 'auto', minHeight: 0 }}>
-          <NoteContextPane
-            db={db}
-            note={loadedNote}
-            draftType={target?.mode === 'draft' ? target.noteType : null}
-            sourceId={draft.sourceId}
-            ownWords={draft.ownWords}
-            linkedIds={draft.linkedIds}
-            error={error}
-            onSourceIdChange={(sourceId) => {
-              setDraft((current) => ({ ...current, sourceId }))
+      {!isCompact && contextContent}
+
+      {isCompact && openCompactPanel && (
+        <div className="workspace-compact-overlay" style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: openCompactPanel === 'rail' ? 'flex-start' : 'flex-end', background: 'rgba(13, 15, 19, 0.72)' }}>
+          <button
+            type="button"
+            aria-label="Close workspace panel"
+            className="workspace-compact-backdrop"
+            onClick={() => {
+              setOpenCompactPanel(null)
             }}
-            onOwnWordsChange={(ownWords) => {
-              setDraft((current) => ({ ...current, ownWords }))
-            }}
-            onToggleLink={(noteId) => {
-              setDraft((current) => ({
-                ...current,
-                linkedIds: current.linkedIds.includes(noteId)
-                  ? current.linkedIds.filter((id) => id !== noteId)
-                  : [...current.linkedIds, noteId],
-              }))
-            }}
-            onPromoteToLiterature={handlePromoteToLiterature}
-            onSaveAsPermanent={handleSaveAsPermanent}
-            onDeleteNote={loadedNote ? handleDeleteNote : undefined}
+            style={{ position: 'absolute', inset: 0, border: 'none', background: 'transparent', padding: 0 }}
           />
-        </div>
-        {loadedNote && (
-          <div style={{ borderTop: `1px solid ${BORDER.faint}`, padding: 12, flexShrink: 0 }}>
-            <ContextGraph db={db} activeNote={loadedNote} onOpenNoteId={(id) => { void onOpenNoteId(id) }} />
+          <div
+            className="workspace-compact-drawer"
+            style={{
+              position: 'relative',
+              zIndex: 1,
+              width: 'min(360px, calc(100% - 32px))',
+              height: '100%',
+              background: BG.panel,
+              borderLeft: openCompactPanel === 'context' ? `1px solid ${BORDER.faint}` : 'none',
+              borderRight: openCompactPanel === 'rail' ? `1px solid ${BORDER.faint}` : 'none',
+              boxShadow: '0 0 32px rgba(0, 0, 0, 0.35)',
+            }}
+          >
+            {openCompactPanel === 'rail' ? railContent : contextContent}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

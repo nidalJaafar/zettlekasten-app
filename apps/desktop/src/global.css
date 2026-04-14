@@ -161,6 +161,18 @@ input, select, textarea, button {
   border-color: #3a4350 !important;
 }
 
+.workspace-compact-toggle:hover {
+  background: #222730 !important;
+}
+
+.workspace-compact-overlay {
+  z-index: 20;
+}
+
+.workspace-compact-drawer {
+  max-width: 100%;
+}
+
 .pane-resize-handle {
   width: 8px;
   flex-shrink: 0;

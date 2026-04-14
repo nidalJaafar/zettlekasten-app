@@ -176,6 +176,14 @@ function createStorage(): Storage {
   }
 }
 
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+}
+
 describe('NoteWorkspace', () => {
   let container: HTMLDivElement
   let root: Root
@@ -183,6 +191,7 @@ describe('NoteWorkspace', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.stubGlobal('localStorage', createStorage())
+    setViewportWidth(1280)
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -500,6 +509,84 @@ describe('NoteWorkspace', () => {
     await act(async () => {
       window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
     })
+  })
+
+  it('uses compact layout controls and hides supporting panes until opened on narrow screens', async () => {
+    const db = createFakeDb()
+    setViewportWidth(900)
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+      window.dispatchEvent(new Event('resize'))
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Pane title: Loaded note')
+    expect(container.querySelector('[data-testid="workspace-rail-pane"]')).toBeNull()
+    expect(container.querySelector('[data-testid="workspace-context-pane"]')).toBeNull()
+    expect(container.querySelector('[data-testid="workspace-rail-resize-handle"]')).toBeNull()
+    expect(container.querySelector('[data-testid="workspace-context-resize-handle"]')).toBeNull()
+    expect(container.querySelector('[aria-label="Show notes panel"]')).not.toBeNull()
+    expect(container.querySelector('[aria-label="Show context panel"]')).not.toBeNull()
+
+    await act(async () => {
+      ;(container.querySelector('[aria-label="Show notes panel"]') as HTMLButtonElement).click()
+      await flushEffects()
+    })
+
+    expect(container.querySelector('[data-testid="workspace-rail-pane"]')).not.toBeNull()
+    expect(container.textContent).toContain('Rail active: note-1')
+
+    await act(async () => {
+      ;(container.querySelector('[aria-label="Show context panel"]') as HTMLButtonElement).click()
+      await flushEffects()
+    })
+
+    expect(container.querySelector('[data-testid="workspace-context-pane"]')).not.toBeNull()
+    expect(container.textContent).toContain('ContextGraph')
+  })
+
+  it('restores the wide three-column layout after leaving compact mode', async () => {
+    const db = createFakeDb()
+    setViewportWidth(900)
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    expect(container.querySelector('[data-testid="workspace-rail-pane"]')).toBeNull()
+    expect(container.querySelector('[data-testid="workspace-context-pane"]')).toBeNull()
+
+    await act(async () => {
+      setViewportWidth(1280)
+      window.dispatchEvent(new Event('resize'))
+      await flushEffects()
+    })
+
+    expect(container.querySelector('[data-testid="workspace-rail-pane"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="workspace-context-pane"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="workspace-rail-resize-handle"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="workspace-context-resize-handle"]')).not.toBeNull()
+    expect(container.querySelector('[aria-label="Show notes panel"]')).toBeNull()
+    expect(container.querySelector('[aria-label="Show context panel"]')).toBeNull()
   })
 
   it('shows persisted save helper errors after autosave fails', async () => {
