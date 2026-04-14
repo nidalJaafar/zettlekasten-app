@@ -26,7 +26,18 @@ vi.mock('../../lib/note-workflow', () => ({
 }))
 
 vi.mock('./WorkspaceRail', () => ({
-  default: ({ activeNoteId }: { activeNoteId: string | null }) => <div>Rail active: {activeNoteId ?? 'none'}</div>,
+  default: ({
+    activeNoteId,
+    onOpenNoteId,
+  }: {
+    activeNoteId: string | null
+    onOpenNoteId: (noteId: string) => Promise<void>
+  }) => (
+    <div>
+      <div>Rail active: {activeNoteId ?? 'none'}</div>
+      <button onClick={() => { void onOpenNoteId('note-2') }}>Open rail note</button>
+    </div>
+  ),
 }))
 
 vi.mock('./ContextGraph', () => ({
@@ -273,9 +284,8 @@ describe('NoteWorkspace', () => {
     expect(container.textContent).toContain('Pane default mode: preview')
 
     await act(async () => {
-      const buttons = Array.from(container.querySelectorAll('button'))
-      buttons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
-      buttons[1].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      clickButton(container, 'Change title')
+      clickButton(container, 'Change body')
       await flushEffects()
     })
 
@@ -399,8 +409,7 @@ describe('NoteWorkspace', () => {
     })
 
     await act(async () => {
-      const buttons = Array.from(container.querySelectorAll('button'))
-      buttons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      clickButton(container, 'Change title')
       await flushEffects()
     })
 
@@ -587,6 +596,72 @@ describe('NoteWorkspace', () => {
     expect(container.querySelector('[data-testid="workspace-context-resize-handle"]')).not.toBeNull()
     expect(container.querySelector('[aria-label="Show notes panel"]')).toBeNull()
     expect(container.querySelector('[aria-label="Show context panel"]')).toBeNull()
+  })
+
+  it('closes the compact rail drawer after opening a note from the rail', async () => {
+    const db = createFakeDb()
+    const onOpenNoteId = vi.fn(async () => {})
+    setViewportWidth(900)
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={onOpenNoteId}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Notes')
+      await flushEffects()
+    })
+
+    expect(container.querySelector('[data-testid="workspace-rail-pane"]')).not.toBeNull()
+
+    await act(async () => {
+      clickButton(container, 'Open rail note')
+      await flushEffects()
+    })
+
+    expect(onOpenNoteId).toHaveBeenCalledWith('note-2')
+    expect(container.querySelector('[data-testid="workspace-rail-pane"]')).toBeNull()
+  })
+
+  it('closes the compact drawer when the backdrop is clicked', async () => {
+    const db = createFakeDb()
+    setViewportWidth(900)
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Context')
+      await flushEffects()
+    })
+
+    expect(container.querySelector('[data-testid="workspace-context-pane"]')).not.toBeNull()
+
+    await act(async () => {
+      ;(container.querySelector('[aria-label="Close workspace panel"]') as HTMLButtonElement).click()
+      await flushEffects()
+    })
+
+    expect(container.querySelector('[data-testid="workspace-context-pane"]')).toBeNull()
   })
 
   it('shows persisted save helper errors after autosave fails', async () => {
@@ -869,8 +944,7 @@ describe('NoteWorkspace', () => {
     })
 
     await act(async () => {
-      const buttons = Array.from(container.querySelectorAll('button'))
-      buttons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      clickButton(container, 'Change title')
       await flushEffects()
     })
 
@@ -898,8 +972,7 @@ describe('NoteWorkspace', () => {
     expect(container.textContent).toContain('Pane save state: saved')
 
     await act(async () => {
-      const buttons = Array.from(container.querySelectorAll('button'))
-      buttons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      clickButton(container, 'Change title')
       await flushEffects()
     })
 

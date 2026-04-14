@@ -42,6 +42,8 @@ export const EMPTY_DRAFT: WorkspaceDraft = {
 }
 
 const COMPACT_WORKSPACE_BREAKPOINT = 1080
+const COMPACT_DRAWER_OVERLAY = `${BG.canvas}b8`
+const COMPACT_DRAWER_SHADOW = `0 0 32px ${BG.canvas}`
 
 function createDraftFromNote(note: Note): WorkspaceDraft {
   return {
@@ -356,12 +358,20 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
     }
   }
 
+  async function handleRailOpenNote(noteId: string) {
+    await onOpenNoteId(noteId)
+
+    if (isCompact) {
+      setOpenCompactPanel(null)
+    }
+  }
+
   const railContent = (
     <div
       data-testid="workspace-rail-pane"
       style={{ width: isCompact ? '100%' : railPane.width, flexShrink: 0, borderRight: `1px solid ${BORDER.faint}`, overflow: 'auto' }}
     >
-      <WorkspaceRail db={db} activeNoteId={loadedNote?.id ?? null} onOpenNoteId={onOpenNoteId} />
+      <WorkspaceRail db={db} activeNoteId={loadedNote?.id ?? null} onOpenNoteId={handleRailOpenNote} />
     </div>
   )
 
@@ -520,7 +530,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
       {!isCompact && contextContent}
 
       {isCompact && openCompactPanel && (
-        <div className="workspace-compact-overlay" style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: openCompactPanel === 'rail' ? 'flex-start' : 'flex-end', background: 'rgba(13, 15, 19, 0.72)' }}>
+        <div className="workspace-compact-overlay" style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: openCompactPanel === 'rail' ? 'flex-start' : 'flex-end', background: COMPACT_DRAWER_OVERLAY }}>
           <button
             type="button"
             aria-label="Close workspace panel"
@@ -540,7 +550,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
               background: BG.panel,
               borderLeft: openCompactPanel === 'context' ? `1px solid ${BORDER.faint}` : 'none',
               borderRight: openCompactPanel === 'rail' ? `1px solid ${BORDER.faint}` : 'none',
-              boxShadow: '0 0 32px rgba(0, 0, 0, 0.35)',
+              boxShadow: COMPACT_DRAWER_SHADOW,
             }}
           >
             {openCompactPanel === 'rail' ? railContent : contextContent}
