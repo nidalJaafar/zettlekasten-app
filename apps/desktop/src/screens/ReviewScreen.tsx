@@ -81,79 +81,96 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
               style={{
                 background: BG.raised,
                 border: `1px solid ${BORDER.faint}`,
-                borderLeft: `3px solid ${typeColor(note.type)}`,
-                borderRadius: 10,
+                borderRadius: 12,
+                overflow: 'hidden',
                 padding: '16px 18px',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 14,
+                flexDirection: 'row',
+                alignItems: 'stretch',
+                gap: 16,
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                <span style={{
-                  fontFamily: FONT.ui,
-                  fontSize: 17,
-                  fontWeight: 600,
-                  color: TEXT.primary,
-                  flex: 1,
-                  lineHeight: 1.3,
-                  letterSpacing: '0.005em',
-                }} data-testid="review-card-title">
-                  {note.title}
-                </span>
-                <span style={{
-                  fontFamily: FONT.ui,
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: typeColor(note.type),
-                  background: BG.panel,
-                  border: `1px solid ${BORDER.base}`,
+              <div
+                data-testid="review-card-accent"
+                style={{
+                  width: 6,
                   borderRadius: 999,
-                  padding: '4px 8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
+                  background: typeColor(note.type),
+                  opacity: 0.8,
                   flexShrink: 0,
-                }} data-testid="review-card-chip">
-                  {note.type}
-                </span>
-              </div>
-              <div style={{
-                background: BG.panel,
-                border: `1px solid ${BORDER.faint}`,
-                borderRadius: 8,
-                padding: '12px 13px',
-              }}>
-                <span style={{
-                  display: 'block',
-                  fontFamily: FONT.ui,
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                  color: previewText(note.content) ? TEXT.secondary : TEXT.muted,
-                }}>
-                  {previewText(note.content) ?? 'No content yet. Open this note to continue shaping it.'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => void onOpenNoteId(note.id)}
-                  data-testid="review-card-open-action"
-                  style={{
-                    background: BG.panel,
-                    border: `1px solid ${BORDER.strong}`,
-                    borderRadius: 8,
-                    color: TEXT.primary,
+                }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <span style={{
                     fontFamily: FONT.ui,
-                    fontSize: 11,
+                    fontSize: 17,
                     fontWeight: 600,
-                    cursor: 'pointer',
-                    padding: '8px 12px',
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    flexShrink: 0,
+                    color: TEXT.primary,
+                    flex: 1,
+                    lineHeight: 1.3,
+                    letterSpacing: '0.005em',
+                  }} data-testid="review-card-title">
+                    {note.title}
+                  </span>
+                  <div
+                    data-testid="review-card-meta"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      gap: 10,
+                      flexWrap: 'wrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{
+                      fontFamily: FONT.ui,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: typeColor(note.type),
+                      background: BG.panel,
+                      border: `1px solid ${BORDER.base}`,
+                      borderRadius: 999,
+                      padding: '4px 8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }} data-testid="review-card-chip">
+                      {note.type}
+                    </span>
+                    <button
+                      onClick={() => void onOpenNoteId(note.id)}
+                      data-testid="review-card-open-action"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: TEXT.secondary,
+                        fontFamily: FONT.ui,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        padding: 0,
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Open in Workspace
+                    </button>
+                  </div>
+                </div>
+                <div
+                  data-testid="review-card-preview"
+                  style={{
+                    marginTop: 6,
+                    fontFamily: FONT.ui,
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    color: previewText(note.content) ? TEXT.secondary : TEXT.muted,
+                    paddingRight: 12,
                   }}
                 >
-                  Open in Workspace
-                </button>
+                  {previewText(note.content) ?? 'No content yet. Open this note to continue shaping it.'}
+                </div>
               </div>
             </div>
           ))}

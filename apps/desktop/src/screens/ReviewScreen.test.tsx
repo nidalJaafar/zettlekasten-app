@@ -185,7 +185,7 @@ describe('ReviewScreen', () => {
     expect(titles).toEqual(['Earlier fleeting', 'Middle literature', 'Later fleeting'])
   })
 
-  it('renders each redesigned card with a compact type chip and primary action', async () => {
+  it('renders each redesigned card as a horizontal row with an accent strip and integrated action metadata', async () => {
     const db = createFakeDb()
     db.query.mockResolvedValue([
       makeNote({ id: 'lit-2', title: 'Literature card', type: 'literature' }),
@@ -201,9 +201,24 @@ describe('ReviewScreen', () => {
     const cards = Array.from(container.querySelectorAll('[data-testid="review-card"]'))
 
     expect(cards).toHaveLength(2)
-    expect(cards[0]?.querySelector('[data-testid="review-card-chip"]')?.textContent).toBe('fleeting')
-    expect(cards[0]?.querySelector('[data-testid="review-card-open-action"]')?.textContent).toBe('Open in Workspace')
-    expect(cards[1]?.querySelector('[data-testid="review-card-chip"]')?.textContent).toBe('literature')
-    expect(cards[1]?.querySelector('[data-testid="review-card-open-action"]')?.textContent).toBe('Open in Workspace')
+
+    for (const [index, card] of cards.entries()) {
+      expect((card as HTMLElement).style.flexDirection).toBe('row')
+
+      const accent = card.querySelector('[data-testid="review-card-accent"]') as HTMLElement | null
+      const metadata = card.querySelector('[data-testid="review-card-meta"]') as HTMLElement | null
+      const preview = card.querySelector('[data-testid="review-card-preview"]') as HTMLElement | null
+      const chip = card.querySelector('[data-testid="review-card-chip"]')
+      const action = card.querySelector('[data-testid="review-card-open-action"]')
+
+      expect(accent).toBeTruthy()
+      expect(accent?.style.width).toBe('6px')
+      expect(metadata).toBeTruthy()
+      expect(metadata?.textContent).toContain(index === 0 ? 'fleeting' : 'literature')
+      expect(metadata?.textContent).toContain('Open in Workspace')
+      expect(metadata?.querySelector('[data-testid="review-card-chip"]')).toBe(chip)
+      expect(metadata?.querySelector('[data-testid="review-card-open-action"]')).toBe(action)
+      expect(preview).toBeTruthy()
+    }
   })
 })
