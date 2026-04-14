@@ -151,8 +151,48 @@ describe('DocumentPane', () => {
     })
 
     // Title input should still be read-only
-    const titleInput = container.querySelector('input')
+    const titleInput = container.querySelector('textarea')
     expect(titleInput?.hasAttribute('readonly')).toBe(true)
+  })
+
+  it('wraps long titles instead of clipping while preserving inline editing', async () => {
+    const onTitleChange = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <DocumentPane
+          title="An extremely long workspace title that should wrap onto multiple lines instead of forcing horizontal scrolling or clipping"
+          content="Body"
+          saveState="saved"
+          placeholderTitle="Title"
+          placeholderBody="Body"
+          onTitleChange={onTitleChange}
+          onContentChange={vi.fn()}
+        />
+      )
+    })
+
+    const titleInput = container.querySelector('textarea')
+    expect(titleInput).toBeTruthy()
+    expect(titleInput?.style.whiteSpace).toBe('pre-wrap')
+    expect(titleInput?.style.overflowWrap).toBe('break-word')
+    expect(titleInput?.style.overflowX).toBe('hidden')
+
+    await act(async () => {
+      if (!titleInput) {
+        throw new Error('expected wrapping title textarea')
+      }
+
+      const setValue = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )?.set
+
+      setValue?.call(titleInput, 'Updated title')
+      titleInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    expect(onTitleChange).toHaveBeenCalledWith('Updated title')
   })
 
   it('renders wikilinks as ctrl-clickable preview links', async () => {

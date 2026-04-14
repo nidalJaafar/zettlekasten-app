@@ -1,7 +1,7 @@
 import MarkdownEditor from '../MarkdownEditor'
 import { BG, BORDER, FONT, TEXT } from '../../theme'
 import SaveStatus, { type SaveState } from './SaveStatus'
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { getWikilinkTarget, renderMarkdownPreview } from '../../lib/wikilinks'
 
 interface Props {
@@ -30,6 +30,17 @@ export default function DocumentPane({
   onLinkClick,
 }: Props) {
   const [isRenderedView, setIsRenderedView] = useState(defaultMode === 'preview')
+  const titleRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useLayoutEffect(() => {
+    const element = titleRef.current
+    if (!element) {
+      return
+    }
+
+    element.style.height = '0px'
+    element.style.height = `${element.scrollHeight}px`
+  }, [title])
 
   function handlePreviewClick(event: React.MouseEvent<HTMLDivElement>) {
     if ((!event.ctrlKey && !event.metaKey) || !onLinkClick) {
@@ -96,11 +107,13 @@ export default function DocumentPane({
           <div style={{ marginBottom: 4 }}>
             <SaveStatus state={saveState} />
           </div>
-          <input
+          <textarea
+            ref={titleRef}
             value={title}
             onChange={(event) => onTitleChange(event.currentTarget.value)}
             readOnly={readOnly}
             placeholder={placeholderTitle}
+            rows={1}
             style={{
               border: 'none',
               outline: 'none',
@@ -112,6 +125,11 @@ export default function DocumentPane({
               lineHeight: 1.2,
               width: '100%',
               padding: '8px 0 12px',
+              resize: 'none',
+              overflowY: 'hidden',
+              overflowX: 'hidden',
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
             }}
           />
           {isRenderedView ? (
