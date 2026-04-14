@@ -101,6 +101,7 @@ input, select, textarea, button {
 
 .cm-editor {
   background: #171a20 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.02);
 }
 
 .cm-scroller,
@@ -114,7 +115,7 @@ input, select, textarea, button {
   font-size: 14px;
   line-height: 1.8;
   color: #e7e0d1;
-  padding: 18px 18px 24px;
+  padding: 18px 20px 24px;
 }
 
 .cm-line {
@@ -128,12 +129,18 @@ input, select, textarea, button {
 
 .cm-activeLine,
 .cm-activeLineGutter {
-  background: transparent !important;
+  background: rgba(255,255,255,0.03) !important;
 }
 
 .cm-gutters {
-  border-right: none !important;
+  border-right: 1px solid #232831 !important;
   color: #5e5b55;
+  background: #14171d !important;
+}
+
+.cm-lineNumbers .cm-gutterElement {
+  min-width: 24px;
+  padding: 0 8px 0 10px;
 }
 
 .cm-cursor {

@@ -38,6 +38,7 @@ vi.mock('./DocumentPane', () => ({
     title,
     content,
     saveState,
+    defaultMode,
     readOnly,
     onTitleChange,
     onContentChange,
@@ -46,6 +47,7 @@ vi.mock('./DocumentPane', () => ({
     title: string
     content: string
     saveState: 'saved' | 'dirty' | 'saving' | 'error'
+    defaultMode?: 'preview' | 'code'
     readOnly?: boolean
     onTitleChange: (value: string) => void
     onContentChange: (value: string) => void
@@ -55,6 +57,7 @@ vi.mock('./DocumentPane', () => ({
       <div>Pane title: {title}</div>
       <div>Pane content: {content}</div>
       <div>Pane save state: {saveState}</div>
+      <div>Pane default mode: {defaultMode ?? 'none'}</div>
       <div>Pane mode: {readOnly ? 'readonly' : 'editable'}</div>
       {!readOnly && <button onClick={() => onTitleChange('Updated title')}>Change title</button>}
       {!readOnly && <button onClick={() => onContentChange('Updated body')}>Change body</button>}
@@ -232,6 +235,7 @@ describe('NoteWorkspace', () => {
     expect(container.textContent).toContain('Rail active: note-1')
     expect(container.textContent).toContain('Pane title: Loaded note')
     expect(container.textContent).toContain('Pane content: Loaded body')
+    expect(container.textContent).toContain('Pane default mode: preview')
 
     await act(async () => {
       const buttons = Array.from(container.querySelectorAll('button'))
@@ -443,9 +447,48 @@ describe('NoteWorkspace', () => {
     })
 
     expect(container.textContent).toContain('Pane save state: dirty')
+    expect(container.textContent).toContain('Pane default mode: code')
     expect(container.textContent).toContain('Pane mode: editable')
     expect(savePersistedNote).not.toHaveBeenCalled()
     expect(container.textContent).not.toContain('Delete note')
+  })
+
+  it('passes preview mode to persisted note targets', async () => {
+    const db = createFakeDb()
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Pane default mode: preview')
+  })
+
+  it('passes code mode to draft targets', async () => {
+    const db = createFakeDb()
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'draft', noteType: 'literature' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Pane default mode: code')
   })
 
   it('soft-deletes a saved note after confirmation, refreshes counts, and clears the active target', async () => {

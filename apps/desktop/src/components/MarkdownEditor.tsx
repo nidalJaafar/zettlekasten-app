@@ -92,9 +92,9 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
       theme="dark"
       style={{ minHeight }}
       basicSetup={{
-        lineNumbers: false,
+        lineNumbers: true,
         foldGutter: false,
-        highlightActiveLine: false,
+        highlightActiveLine: true,
         highlightSelectionMatches: false,
       }}
     />

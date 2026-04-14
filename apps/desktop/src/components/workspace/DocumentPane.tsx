@@ -8,6 +8,7 @@ interface Props {
   title: string
   content: string
   saveState: SaveState
+  defaultMode?: 'preview' | 'code'
   readOnly?: boolean
   placeholderTitle: string
   placeholderBody: string
@@ -20,6 +21,7 @@ export default function DocumentPane({
   title,
   content,
   saveState,
+  defaultMode = 'code',
   readOnly = false,
   placeholderTitle,
   placeholderBody,
@@ -27,7 +29,7 @@ export default function DocumentPane({
   onContentChange,
   onLinkClick,
 }: Props) {
-  const [isRenderedView, setIsRenderedView] = useState(false)
+  const [isRenderedView, setIsRenderedView] = useState(defaultMode === 'preview')
 
   function handlePreviewClick(event: React.MouseEvent<HTMLDivElement>) {
     if ((!event.ctrlKey && !event.metaKey) || !onLinkClick) {
@@ -129,12 +131,40 @@ export default function DocumentPane({
             />
           ) : (
             <div style={{
-              border: `1px solid ${BORDER.faint}`,
-              borderRadius: 10,
+              border: `1px solid ${BORDER.base}`,
+              borderRadius: 12,
               overflow: 'hidden',
               background: BG.panel,
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
+              boxShadow: '0 18px 40px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.02)',
             }}>
+              <div
+                data-testid="editor-chrome"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderBottom: `1px solid ${BORDER.faint}`,
+                  background: BG.raised,
+                }}
+              >
+                <span style={{
+                  fontFamily: FONT.ui,
+                  fontSize: 11,
+                  color: TEXT.faint,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}>
+                  Markdown
+                </span>
+                <span style={{
+                  fontFamily: FONT.ui,
+                  fontSize: 11,
+                  color: TEXT.secondary,
+                }}>
+                  Code View
+                </span>
+              </div>
               <MarkdownEditor
                 value={content}
                 onChange={(value) => {

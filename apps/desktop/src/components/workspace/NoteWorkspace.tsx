@@ -348,9 +348,11 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
 
       <div style={{ flex: '1 1 0%', minWidth: 0, minHeight: 0, overflow: 'auto' }}>
         <DocumentPane
+          key={target ? (target.mode === 'draft' ? `draft:${target.noteType}` : `note:${target.noteId}`) : 'workspace-empty'}
           title={draft.title}
           content={draft.content}
           saveState={saveState}
+          defaultMode={target?.mode === 'note' ? 'preview' : 'code'}
           readOnly={!isEditable}
           placeholderTitle={isDraftTarget ? 'Untitled note' : 'Untitled'}
           placeholderBody="Write here..."
