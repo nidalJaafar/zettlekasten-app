@@ -32,7 +32,7 @@ export default function DocumentPane({
   const [isRenderedView, setIsRenderedView] = useState(defaultMode === 'preview')
   const titleRef = useRef<HTMLTextAreaElement | null>(null)
 
-  useLayoutEffect(() => {
+  function resizeTitle() {
     const element = titleRef.current
     if (!element) {
       return
@@ -40,7 +40,28 @@ export default function DocumentPane({
 
     element.style.height = '0px'
     element.style.height = `${element.scrollHeight}px`
+  }
+
+  useLayoutEffect(() => {
+    resizeTitle()
   }, [title])
+
+  useLayoutEffect(() => {
+    const element = titleRef.current
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return
+    }
+
+    const observer = new ResizeObserver(() => {
+      resizeTitle()
+    })
+
+    observer.observe(element)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
 
   function handlePreviewClick(event: React.MouseEvent<HTMLDivElement>) {
     if ((!event.ctrlKey && !event.metaKey) || !onLinkClick) {

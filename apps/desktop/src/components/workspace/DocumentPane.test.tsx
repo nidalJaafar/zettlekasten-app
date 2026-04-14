@@ -5,6 +5,28 @@ import DocumentPane from './DocumentPane'
 
 const codeMirrorSpy = vi.fn<[unknown], void>()
 
+class ResizeObserverStub {
+  static instances: ResizeObserverStub[] = []
+
+  callback: ResizeObserverCallback
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback
+    ResizeObserverStub.instances.push(this)
+  }
+
+  observe = vi.fn()
+  disconnect = vi.fn()
+
+  trigger(target: Element) {
+    this.callback([{ target } as ResizeObserverEntry], this as unknown as ResizeObserver)
+  }
+
+  static reset() {
+    ResizeObserverStub.instances = []
+  }
+}
+
 vi.mock('../MarkdownEditor', () => ({
   default: (props: unknown) => {
     codeMirrorSpy(props)
@@ -15,12 +37,16 @@ vi.mock('../MarkdownEditor', () => ({
 describe('DocumentPane', () => {
   let container: HTMLDivElement
   let root: Root
+  let originalResizeObserver: typeof globalThis.ResizeObserver | undefined
 
   beforeEach(() => {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     codeMirrorSpy.mockClear()
+    originalResizeObserver = globalThis.ResizeObserver
+    globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver
+    ResizeObserverStub.reset()
   })
 
   afterEach(async () => {
@@ -28,6 +54,7 @@ describe('DocumentPane', () => {
       root.unmount()
     })
     container.remove()
+    globalThis.ResizeObserver = originalResizeObserver
   })
 
   it('renders in code view by default', async () => {
@@ -157,42 +184,71 @@ describe('DocumentPane', () => {
 
   it('wraps long titles instead of clipping while preserving inline editing', async () => {
     const onTitleChange = vi.fn()
+    let measuredHeight = 48
+    const originalScrollHeight = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype,
+      'scrollHeight'
+    )
 
-    await act(async () => {
-      root.render(
-        <DocumentPane
-          title="An extremely long workspace title that should wrap onto multiple lines instead of forcing horizontal scrolling or clipping"
-          content="Body"
-          saveState="saved"
-          placeholderTitle="Title"
-          placeholderBody="Body"
-          onTitleChange={onTitleChange}
-          onContentChange={vi.fn()}
-        />
-      )
+    Object.defineProperty(window.HTMLTextAreaElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get() {
+        return measuredHeight
+      },
     })
 
-    const titleInput = container.querySelector('textarea')
-    expect(titleInput).toBeTruthy()
-    expect(titleInput?.style.whiteSpace).toBe('pre-wrap')
-    expect(titleInput?.style.overflowWrap).toBe('break-word')
-    expect(titleInput?.style.overflowX).toBe('hidden')
+    try {
+      await act(async () => {
+        root.render(
+          <DocumentPane
+            title="An extremely long workspace title that should wrap onto multiple lines instead of forcing horizontal scrolling or clipping"
+            content="Body"
+            saveState="saved"
+            placeholderTitle="Title"
+            placeholderBody="Body"
+            onTitleChange={onTitleChange}
+            onContentChange={vi.fn()}
+          />
+        )
+      })
 
-    await act(async () => {
-      if (!titleInput) {
-        throw new Error('expected wrapping title textarea')
+      const titleInput = container.querySelector('textarea')
+      expect(titleInput).toBeTruthy()
+      expect(titleInput?.style.whiteSpace).toBe('pre-wrap')
+      expect(titleInput?.style.overflowWrap).toBe('break-word')
+      expect(titleInput?.style.overflowX).toBe('hidden')
+      expect(titleInput?.style.height).toBe('48px')
+
+      const resizeObserver = ResizeObserverStub.instances[0]
+      expect(resizeObserver).toBeTruthy()
+
+      measuredHeight = 96
+      await act(async () => {
+        resizeObserver?.trigger(titleInput as HTMLTextAreaElement)
+      })
+
+      expect(titleInput?.style.height).toBe('96px')
+
+      await act(async () => {
+        if (!titleInput) {
+          throw new Error('expected wrapping title textarea')
+        }
+
+        const setValue = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype,
+          'value'
+        )?.set
+
+        setValue?.call(titleInput, 'Updated title')
+        titleInput.dispatchEvent(new Event('input', { bubbles: true }))
+      })
+
+      expect(onTitleChange).toHaveBeenCalledWith('Updated title')
+    } finally {
+      if (originalScrollHeight) {
+        Object.defineProperty(window.HTMLTextAreaElement.prototype, 'scrollHeight', originalScrollHeight)
       }
-
-      const setValue = Object.getOwnPropertyDescriptor(
-        window.HTMLTextAreaElement.prototype,
-        'value'
-      )?.set
-
-      setValue?.call(titleInput, 'Updated title')
-      titleInput.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-
-    expect(onTitleChange).toHaveBeenCalledWith('Updated title')
+    }
   })
 
   it('renders wikilinks as ctrl-clickable preview links', async () => {
