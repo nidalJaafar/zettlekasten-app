@@ -17,7 +17,7 @@ interface Props {
   onLinkClick?: (linkText: string) => void
   wikilinkOptions?: WikilinkOption[]
   onCreateWikilinkNote?: (title: string) => Promise<{ id: string; title: string }>
-  sourceLabel?: string | null
+  sourceDetails?: { type: string; label: string; description: string | null } | null
 }
 
 export default function DocumentPane({
@@ -33,7 +33,7 @@ export default function DocumentPane({
   onLinkClick,
   wikilinkOptions,
   onCreateWikilinkNote,
-  sourceLabel,
+  sourceDetails,
 }: Props) {
   const [isRenderedView, setIsRenderedView] = useState(defaultMode === 'preview')
   const titleRef = useRef<HTMLTextAreaElement | null>(null)
@@ -163,15 +163,33 @@ export default function DocumentPane({
               overflowWrap: 'break-word',
             }}
           />
-          {isRenderedView && sourceLabel && (
+          {isRenderedView && sourceDetails && (
             <div style={{
               color: TEXT.muted,
               fontSize: 12,
               fontFamily: FONT.ui,
               marginBottom: 16,
-              fontStyle: 'italic',
+              lineHeight: 1.5,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
             }}>
-              {sourceLabel}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  fontSize: 10,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}>
+                  {sourceDetails.type}
+                </span>
+                <span style={{ fontStyle: 'italic' }}>{sourceDetails.label}</span>
+              </div>
+              {sourceDetails.description && (
+                <div style={{ marginTop: 2 }}>{sourceDetails.description}</div>
+              )}
             </div>
           )}
           {isRenderedView ? (

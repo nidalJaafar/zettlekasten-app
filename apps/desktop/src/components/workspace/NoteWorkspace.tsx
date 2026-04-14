@@ -73,7 +73,11 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
   const [saveState, setSaveState] = useState<SaveState>('saved')
   const [error, setError] = useState<string | null>(null)
   const [deletePending, setDeletePending] = useState(false)
-  const [sourceLabel, setSourceLabel] = useState<string | null>(null)
+  const [sourceDetails, setSourceDetails] = useState<{
+    type: string
+    label: string
+    description: string | null
+  } | null>(null)
   const inFlightSave = useRef<{
     noteId: string
     title: string
@@ -123,16 +127,16 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
 
   useEffect(() => {
     if (!draft.sourceId) {
-      setSourceLabel(null)
+      setSourceDetails(null)
       return
     }
     let cancelled = false
-    void db.queryOne<{ label: string }>(
-      'SELECT label FROM sources WHERE id = ?',
+    void db.queryOne<{ type: string; label: string; description: string | null }>(
+      'SELECT type, label, description FROM sources WHERE id = ?',
       [draft.sourceId]
     ).then((row) => {
       if (cancelled) return
-      setSourceLabel(row?.label ?? null)
+      setSourceDetails(row ?? null)
     })
     return () => { cancelled = true }
   }, [db, draft.sourceId])
@@ -572,7 +576,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
           }}
           wikilinkOptions={wikilinkOptions}
           onCreateWikilinkNote={(title) => handleCreateWikilinkNote(title)}
-          sourceLabel={draft.sourceId ? sourceLabel : null}
+          sourceDetails={draft.sourceId ? sourceDetails : null}
         />
       </div>
 
