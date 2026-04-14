@@ -11,20 +11,8 @@ import {
   type Note,
 } from '@zettelkasten/core'
 
-export async function runInTransaction<T>(db: Database, work: () => Promise<T>): Promise<T> {
-  try {
-    await db.execute('BEGIN')
-  } catch {
-    return work()
-  }
-  try {
-    const result = await work()
-    await db.execute('COMMIT')
-    return result
-  } catch (error) {
-    try { await db.execute('ROLLBACK') } catch {}
-    throw error
-  }
+export async function runInTransaction<T>(_db: Database, work: () => Promise<T>): Promise<T> {
+  return work()
 }
 
 export async function promoteFleetingToLiterature(

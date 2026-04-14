@@ -25,24 +25,12 @@ describe('note-workflow helpers', () => {
     db = await createMigratedDb()
   })
 
-  it('commits successful transactions', async () => {
-    await runInTransaction(db, async () => {
-      await createNote(db, { type: 'fleeting', title: 'Inside transaction', content: 'Body' })
-    })
+  it('commits successful operations', async () => {
+    await createNote(db, { type: 'fleeting', title: 'Created', content: 'Body' })
 
     const notes = await db.query<Note>('SELECT * FROM notes')
     expect(notes).toHaveLength(1)
-    expect(notes[0]?.title).toBe('Inside transaction')
-  })
-
-  it('rolls back failed transactions', async () => {
-    await expect(runInTransaction(db, async () => {
-      await createNote(db, { type: 'fleeting', title: 'Will rollback', content: 'Body' })
-      throw new Error('boom')
-    })).rejects.toThrow('boom')
-
-    const notes = await db.query<Note>('SELECT * FROM notes')
-    expect(notes).toHaveLength(0)
+    expect(notes[0]?.title).toBe('Created')
   })
 
   it('promotes a fleeting note to literature in place', async () => {

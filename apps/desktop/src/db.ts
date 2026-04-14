@@ -8,6 +8,7 @@ export async function getDb(): Promise<CoreDatabase> {
   if (!_db) {
     _dbPromise ??= (async () => {
       const db = await Database.load('sqlite:zettelkasten.db')
+      await db.execute('PRAGMA journal_mode = WAL')
       await db.execute('PRAGMA foreign_keys = ON')
       _db = db
       return db
