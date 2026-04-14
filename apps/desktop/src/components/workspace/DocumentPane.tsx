@@ -1,4 +1,4 @@
-import MarkdownEditor from '../MarkdownEditor'
+import MarkdownEditor, { type WikilinkOption } from '../MarkdownEditor'
 import { BG, BORDER, FONT, TEXT } from '../../theme'
 import SaveStatus, { type SaveState } from './SaveStatus'
 import { useLayoutEffect, useRef, useState } from 'react'
@@ -15,6 +15,8 @@ interface Props {
   onTitleChange: (value: string) => void
   onContentChange: (value: string) => void
   onLinkClick?: (linkText: string) => void
+  wikilinkOptions?: WikilinkOption[]
+  onCreateWikilinkNote?: (title: string) => Promise<{ id: string; title: string }>
 }
 
 export default function DocumentPane({
@@ -28,6 +30,8 @@ export default function DocumentPane({
   onTitleChange,
   onContentChange,
   onLinkClick,
+  wikilinkOptions,
+  onCreateWikilinkNote,
 }: Props) {
   const [isRenderedView, setIsRenderedView] = useState(defaultMode === 'preview')
   const titleRef = useRef<HTMLTextAreaElement | null>(null)
@@ -219,6 +223,8 @@ export default function DocumentPane({
                 placeholder={placeholderBody}
                 minHeight="60vh"
                 onLinkClick={onLinkClick}
+                wikilinkOptions={wikilinkOptions}
+                onCreateWikilinkNote={onCreateWikilinkNote}
               />
             </div>
           )}

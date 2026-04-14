@@ -10,6 +10,7 @@ import {
   syncNoteLinks,
 } from '../../lib/note-workflow'
 import DocumentPane from './DocumentPane'
+import type { WikilinkOption } from '../MarkdownEditor'
 import NoteContextPane from './NoteContextPane'
 import type { SaveState } from './SaveStatus'
 import WorkspaceRail from './WorkspaceRail'
@@ -83,6 +84,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
   const isEditable = Boolean(target)
   const [isCompact, setIsCompact] = useState(() => window.innerWidth < COMPACT_WORKSPACE_BREAKPOINT)
   const [openCompactPanel, setOpenCompactPanel] = useState<'rail' | 'context' | null>(null)
+  const [wikilinkOptions, setWikilinkOptions] = useState<WikilinkOption[]>([])
 
   useEffect(() => {
     function syncCompactMode() {
@@ -106,6 +108,17 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
       setOpenCompactPanel(null)
     }
   }, [isCompact, target])
+
+  useEffect(() => {
+    let cancelled = false
+    void db.query<{ id: string; title: string }>(
+      'SELECT id, title FROM notes WHERE deleted_at IS NULL ORDER BY updated_at DESC'
+    ).then((rows) => {
+      if (cancelled) return
+      setWikilinkOptions(rows)
+    })
+    return () => { cancelled = true }
+  }, [db, draft.content, draft.title])
 
   useEffect(() => {
     let cancelled = false
@@ -364,6 +377,17 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
     }
   }
 
+  async function handleCreateWikilinkNote(title: string) {
+    const created = await createNote(db, { type: 'fleeting', title })
+    await onInboxCountChange()
+    void db.query<{ id: string; title: string }>(
+      'SELECT id, title FROM notes WHERE deleted_at IS NULL ORDER BY updated_at DESC'
+    ).then((rows) => {
+      setWikilinkOptions(rows)
+    })
+    return { id: created.id, title: created.title }
+  }
+
   async function handleRailOpenNote(noteId: string) {
     await onOpenNoteId(noteId)
 
@@ -529,6 +553,8 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
           onLinkClick={(linkText) => {
             void handleLinkClick(linkText)
           }}
+          wikilinkOptions={wikilinkOptions}
+          onCreateWikilinkNote={(title) => handleCreateWikilinkNote(title)}
         />
       </div>
 

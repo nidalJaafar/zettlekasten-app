@@ -59,6 +59,8 @@ vi.mock('./DocumentPane', () => ({
     onTitleChange,
     onContentChange,
     onLinkClick,
+    wikilinkOptions,
+    onCreateWikilinkNote,
   }: {
     title: string
     content: string
@@ -68,6 +70,8 @@ vi.mock('./DocumentPane', () => ({
     onTitleChange: (value: string) => void
     onContentChange: (value: string) => void
     onLinkClick?: (value: string) => void
+    wikilinkOptions?: Array<{ id: string; title: string }>
+    onCreateWikilinkNote?: (title: string) => Promise<{ id: string; title: string }>
   }) => (
     <div>
       <div>Pane title: {title}</div>
@@ -78,6 +82,8 @@ vi.mock('./DocumentPane', () => ({
       {!readOnly && <button onClick={() => onTitleChange('Updated title')}>Change title</button>}
       {!readOnly && <button onClick={() => onContentChange('Updated body')}>Change body</button>}
       {onLinkClick && <button onClick={() => onLinkClick('Linked note')}>Open linked note</button>}
+      {wikilinkOptions && <div>Pane wikilink options: {wikilinkOptions.map((o) => o.title).join(', ')}</div>}
+      {onCreateWikilinkNote && <button onClick={() => { void onCreateWikilinkNote('New note') }}>Create wikilink note</button>}
     </div>
   ),
 }))
@@ -1160,5 +1166,52 @@ describe('NoteWorkspace', () => {
     })
 
     expect(syncNoteLinks).toHaveBeenCalledWith(db, 'note-1', ['link-picked'])
+  })
+
+  it('passes wikilink suggestions from existing notes into the document pane', async () => {
+    const db = createFakeDb()
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Pane wikilink options')
+    expect(container.textContent).toContain('Loaded note')
+    expect(container.textContent).toContain('Older note')
+  })
+
+  it('creates a new fleeting note from the wikilink picker and refreshes options', async () => {
+    const db = createFakeDb()
+    const onInboxCountChange = vi.fn(async () => {})
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={onInboxCountChange}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Create wikilink note')
+      await flushEffects()
+    })
+
+    expect(createNote).toHaveBeenCalledWith(db, { type: 'fleeting', title: 'New note' })
+    expect(onInboxCountChange).toHaveBeenCalled()
   })
 })

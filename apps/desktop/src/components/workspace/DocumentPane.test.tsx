@@ -32,6 +32,7 @@ vi.mock('../MarkdownEditor', () => ({
     codeMirrorSpy(props)
     return <div data-testid="markdown-editor">MarkdownEditor</div>
   },
+  WikilinkOption: undefined,
 }))
 
 describe('DocumentPane', () => {
