@@ -14,7 +14,7 @@ interface Props {
 export default function GraphScreen({ db, workspaceTarget, onOpenNoteId }: Props) {
   const [notes, setNotes] = useState<Note[]>([])
   const [links, setLinks] = useState<NoteLink[]>([])
-  const [selected, setSelected] = useState<Note | null>(null)
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [loaded, setLoaded] = useState(false)
 
@@ -34,18 +34,25 @@ export default function GraphScreen({ db, workspaceTarget, onOpenNoteId }: Props
   const visibleLinks = links.filter(
     (link) => visibleNoteIds.has(link.from_note_id) && visibleNoteIds.has(link.to_note_id)
   )
+  const focusedNoteId =
+    workspaceTarget?.mode === 'note' && notes.some((note) => note.id === workspaceTarget.noteId)
+      ? workspaceTarget.noteId
+      : undefined
+  const selected = selectedNoteId
+    ? notes.find((note) => note.id === selectedNoteId) ?? null
+    : null
 
   useEffect(() => {
-    if (selected && !visibleNoteIds.has(selected.id)) {
-      setSelected(null)
+    if (selectedNoteId && !visibleNoteIds.has(selectedNoteId)) {
+      setSelectedNoteId(null)
     }
-  }, [selected, visibleNoteIds])
+  }, [selectedNoteId, visibleNoteIds])
 
   useEffect(() => {
     if (workspaceTarget?.mode !== 'note') return
     const targetNote = notes.find((note) => note.id === workspaceTarget.noteId)
     if (targetNote) {
-      setSelected(targetNote)
+      setSelectedNoteId(targetNote.id)
     }
   }, [notes, workspaceTarget])
 
@@ -68,15 +75,13 @@ export default function GraphScreen({ db, workspaceTarget, onOpenNoteId }: Props
     )
   }
 
-  const selectedNoteId = selected?.id
-
   return (
     <div style={{ position: 'relative', height: '100%' }}>
       <GraphCanvas
         notes={filtered}
         links={visibleLinks}
-        onNodeClick={setSelected}
-        focusNoteId={selectedNoteId}
+        onNodeClick={(note) => setSelectedNoteId(note.id)}
+        focusNoteId={focusedNoteId}
         selectedNoteId={selectedNoteId}
         mode="full"
       />
@@ -182,7 +187,7 @@ export default function GraphScreen({ db, workspaceTarget, onOpenNoteId }: Props
               Open
             </button>
             <button
-              onClick={() => setSelected(null)}
+              onClick={() => setSelectedNoteId(null)}
               className="btn-dismiss"
               style={{
                 background: 'transparent',
