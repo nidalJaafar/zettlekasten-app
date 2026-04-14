@@ -1,12 +1,17 @@
-# Review Library-Style Design
+# Review And Workspace Readability Design
 
 ## Goal
 
-Make the Review screen feel visually similar to the Library screen while keeping Review's existing color palette and workflow purpose.
+Make the Review screen feel visually similar to the Library screen while keeping Review's existing color palette, and improve workspace readability for long titles and compact window sizes.
 
 ## Problem
 
 The current Review screen feels too custom and too different from Library. The user wants Review to inherit the calmer, more consistent visual language of Library, but without losing Review-specific actions or changing Review's colors.
+
+The workspace also has two readability issues:
+
+- long note titles can get visually cut off
+- the 3-column workspace becomes hard to read in compact windows
 
 ## Design
 
@@ -43,9 +48,10 @@ Review items should move toward:
 ### Review-specific behavior
 
 - Keep the Review queue loading/filtering behavior unchanged.
-- Keep the existing `Open in Workspace` action.
+- Remove the `Open in Workspace` control from each row.
+- Make the entire Review row clickable like Library.
 - Keep type information visible, but integrated into the Library-like layout rather than emphasized as a separate card treatment.
-- Keep the action obvious, but not louder than the Library-like row shell.
+- Use the row shell itself and hover/focus treatment to communicate clickability.
 
 ### Color rule
 
@@ -53,12 +59,34 @@ Review items should move toward:
 - Preserve the current Review color choices and note-type accents.
 - Only the layout language, spacing rhythm, and card structure should move toward Library.
 
+## Workspace Design
+
+### Long titles
+
+- Workspace note titles should wrap naturally to multiple lines instead of being cut off.
+- Keep inline editing behavior.
+- Do not require horizontal scrolling for long titles.
+
+### Compact windows
+
+- The workspace should stop forcing the 3-column layout on narrow widths.
+- On compact windows, use a two-pane fallback centered on document readability.
+- The document pane remains primary.
+- Supporting panes (rail/context) should move into secondary toggleable panels or drawers rather than compressing the editor.
+
+### Principle
+
+- Reading and editing the current note takes priority over always-visible supporting panes.
+- The compact layout should reduce clutter and preserve legibility.
+
 ## Implementation outline
 
 - Update `apps/desktop/src/screens/ReviewScreen.tsx` to mirror the Library screen's structural layout more closely.
 - Rework Review rows to use a Library-like horizontal entry structure with a left accent strip and integrated action area.
 - Keep Review-specific buttons and queue metadata.
 - Update `apps/desktop/src/screens/ReviewScreen.test.tsx` to reflect the new structure.
+- Update the workspace document title rendering so long titles wrap cleanly.
+- Update the workspace layout so compact widths fall back from 3 columns to a more readable two-pane pattern.
 
 ## Testing
 
@@ -66,8 +94,10 @@ Add or update tests for:
 
 - Library-like Review row/card structure
 - left accent strip and Library-style row shell
-- retained Review action rendering
+- clickable Review row behavior
 - unchanged Review queue behavior
+- wrapped workspace title behavior
+- compact workspace fallback behavior
 
 ## Scope boundaries
 
@@ -75,6 +105,8 @@ Included:
 
 - Review screen visual/layout alignment with Library
 - preserving current Review colors
+- wrapped workspace titles
+- compact-window workspace readability improvements
 
 Not included:
 
