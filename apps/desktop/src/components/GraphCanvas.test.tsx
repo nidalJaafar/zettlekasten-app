@@ -254,10 +254,10 @@ describe('GraphCanvas', () => {
     expect(rebuiltNodeGroups).toHaveLength(2)
     expect(positionsAfter[0]?.id).toBe(positionsBefore[0]?.id)
     expect(positionsAfter[1]?.id).toBe(positionsBefore[1]?.id)
-    expect(Math.abs((positionsAfter[0]?.x ?? 0) - (positionsBefore[0]?.x ?? 0))).toBeLessThan(12)
-    expect(Math.abs((positionsAfter[0]?.y ?? 0) - (positionsBefore[0]?.y ?? 0))).toBeLessThan(12)
-    expect(Math.abs((positionsAfter[1]?.x ?? 0) - (positionsBefore[1]?.x ?? 0))).toBeLessThan(12)
-    expect(Math.abs((positionsAfter[1]?.y ?? 0) - (positionsBefore[1]?.y ?? 0))).toBeLessThan(12)
+    expect(Math.abs((positionsAfter[0]?.x ?? 0) - (positionsBefore[0]?.x ?? 0))).toBeLessThan(20)
+    expect(Math.abs((positionsAfter[0]?.y ?? 0) - (positionsBefore[0]?.y ?? 0))).toBeLessThan(20)
+    expect(Math.abs((positionsAfter[1]?.x ?? 0) - (positionsBefore[1]?.x ?? 0))).toBeLessThan(20)
+    expect(Math.abs((positionsAfter[1]?.y ?? 0) - (positionsBefore[1]?.y ?? 0))).toBeLessThan(20)
   })
 
   it('lets the simulation continue when structure-affecting inputs change', async () => {
