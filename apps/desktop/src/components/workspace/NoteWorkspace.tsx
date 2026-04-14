@@ -14,6 +14,8 @@ import NoteContextPane from './NoteContextPane'
 import type { SaveState } from './SaveStatus'
 import WorkspaceRail from './WorkspaceRail'
 import ContextGraph from './ContextGraph'
+import { useResizablePane } from '../../hooks/useResizablePane'
+import { WORKSPACE_CONTEXT_PANE, WORKSPACE_RAIL_PANE } from '../../lib/layout'
 
 interface Props {
   db: Database
@@ -59,6 +61,8 @@ async function findNoteIdByTitle(db: Database, title: string): Promise<string | 
 }
 
 export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, onInboxCountChange }: Props) {
+  const railPane = useResizablePane(WORKSPACE_RAIL_PANE)
+  const contextPane = useResizablePane({ ...WORKSPACE_CONTEXT_PANE, direction: 'right' })
   const [loadedNote, setLoadedNote] = useState<Note | null>(null)
   const [draft, setDraft] = useState<WorkspaceDraft>(EMPTY_DRAFT)
   const [saveState, setSaveState] = useState<SaveState>('saved')
@@ -342,9 +346,19 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         overflow: 'hidden',
       }}
     >
-      <div style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${BORDER.faint}`, overflow: 'auto' }}>
+      <div
+        data-testid="workspace-rail-pane"
+        style={{ width: railPane.width, flexShrink: 0, borderRight: `1px solid ${BORDER.faint}`, overflow: 'auto' }}
+      >
         <WorkspaceRail db={db} activeNoteId={loadedNote?.id ?? null} onOpenNoteId={onOpenNoteId} />
       </div>
+
+      <div
+        data-testid="workspace-rail-resize-handle"
+        {...railPane.handleProps}
+        aria-label="Resize workspace rail"
+        className={`pane-resize-handle workspace-resize-handle${railPane.isDragging ? ' is-dragging' : ''}`}
+      />
 
       <div style={{ flex: '1 1 0%', minWidth: 0, minHeight: 0, overflow: 'auto' }}>
         <DocumentPane
@@ -368,8 +382,15 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         />
       </div>
 
-      <div style={{
-        width: 280,
+      <div
+        data-testid="workspace-context-resize-handle"
+        {...contextPane.handleProps}
+        aria-label="Resize workspace context"
+        className={`pane-resize-handle workspace-resize-handle${contextPane.isDragging ? ' is-dragging' : ''}`}
+      />
+
+      <div data-testid="workspace-context-pane" style={{
+        width: contextPane.width,
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',

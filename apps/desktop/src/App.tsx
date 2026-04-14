@@ -9,6 +9,8 @@ import GraphScreen from './screens/GraphScreen'
 import LibraryScreen from './screens/LibraryScreen'
 import TrashScreen from './screens/TrashScreen'
 import NoteWorkspace from './components/workspace/NoteWorkspace'
+import { useResizablePane } from './hooks/useResizablePane'
+import { APP_SIDEBAR_PANE } from './lib/layout'
 
 export type Screen = 'inbox' | 'workspace' | 'review' | 'library' | 'graph' | 'trash'
 
@@ -17,6 +19,7 @@ export type WorkspaceTarget =
   | { mode: 'draft'; noteType: 'literature' | 'permanent' }
 
 export default function App() {
+  const sidebarPane = useResizablePane(APP_SIDEBAR_PANE)
   const [db, setDb] = useState<Database | null>(null)
   const [dbError, setDbError] = useState<string | null>(null)
   const [screen, setScreen] = useState<Screen>('inbox')
@@ -103,8 +106,13 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
-      <Sidebar current={screen} onNavigate={setScreen} inboxCount={inboxCount} />
-      <main style={{ flex: 1, overflow: 'hidden' }}>
+      <Sidebar current={screen} onNavigate={setScreen} inboxCount={inboxCount} width={sidebarPane.width} />
+      <div
+        {...sidebarPane.handleProps}
+        aria-label="Resize app sidebar"
+        className={`pane-resize-handle app-shell-resize-handle${sidebarPane.isDragging ? ' is-dragging' : ''}`}
+      />
+      <main style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
         {screen === 'inbox' && <InboxScreen db={db} onCountChange={setInboxCount} />}
         {screen === 'workspace' && (
           <NoteWorkspace

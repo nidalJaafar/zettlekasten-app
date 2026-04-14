@@ -5,6 +5,7 @@ interface Props {
   current: Screen
   onNavigate: (screen: Screen) => void
   inboxCount: number
+  width?: number
 }
 
 const items: { id: Screen; label: string }[] = [
@@ -16,11 +17,11 @@ const items: { id: Screen; label: string }[] = [
   { id: 'trash', label: 'Trash' },
 ]
 
-export default function Sidebar({ current, onNavigate, inboxCount }: Props) {
+export default function Sidebar({ current, onNavigate, inboxCount, width = 168 }: Props) {
   return (
     <nav
       style={{
-        width: 168,
+        width,
         background: BG.panel,
         borderRight: `1px solid ${BORDER.faint}`,
         display: 'flex',

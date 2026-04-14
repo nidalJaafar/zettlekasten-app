@@ -151,12 +151,38 @@ function clickButton(container: HTMLDivElement, label: string) {
   button.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 }
 
+function createStorage(): Storage {
+  const store = new Map<string, string>()
+
+  return {
+    get length() {
+      return store.size
+    },
+    clear() {
+      store.clear()
+    },
+    getItem(key) {
+      return store.get(key) ?? null
+    },
+    key(index) {
+      return Array.from(store.keys())[index] ?? null
+    },
+    removeItem(key) {
+      store.delete(key)
+    },
+    setItem(key, value) {
+      store.set(key, value)
+    },
+  }
+}
+
 describe('NoteWorkspace', () => {
   let container: HTMLDivElement
   let root: Root
 
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.stubGlobal('localStorage', createStorage())
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
@@ -393,6 +419,87 @@ describe('NoteWorkspace', () => {
     })
 
     expect(container.textContent).toContain('Pane save state: saved')
+  })
+
+  it('renders draggable separators and restores persisted rail and context widths', async () => {
+    const db = createFakeDb()
+    localStorage.setItem('layout.workspace.rail.width', '310')
+    localStorage.setItem('layout.workspace.context.width', '330')
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    const railPane = container.querySelector('[data-testid="workspace-rail-pane"]')
+    const contextPane = container.querySelector('[data-testid="workspace-context-pane"]')
+    const railHandle = container.querySelector('[data-testid="workspace-rail-resize-handle"]')
+    const contextHandle = container.querySelector('[data-testid="workspace-context-resize-handle"]')
+
+    expect(railPane).not.toBeNull()
+    expect(contextPane).not.toBeNull()
+    expect(railHandle?.getAttribute('role')).toBe('separator')
+    expect(contextHandle?.getAttribute('role')).toBe('separator')
+    expect((railPane as HTMLDivElement).style.width).toBe('310px')
+    expect((contextPane as HTMLDivElement).style.width).toBe('330px')
+  })
+
+  it('updates workspace pane widths while dragging and persists the new values', async () => {
+    const db = createFakeDb()
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    const railPane = container.querySelector('[data-testid="workspace-rail-pane"]')
+    const contextPane = container.querySelector('[data-testid="workspace-context-pane"]')
+    const railHandle = container.querySelector('[data-testid="workspace-rail-resize-handle"]')
+    const contextHandle = container.querySelector('[data-testid="workspace-context-resize-handle"]')
+
+    if (!(railPane instanceof HTMLDivElement) || !(contextPane instanceof HTMLDivElement)) {
+      throw new Error('Missing workspace panes')
+    }
+
+    if (!(railHandle instanceof HTMLDivElement) || !(contextHandle instanceof HTMLDivElement)) {
+      throw new Error('Missing workspace resize handles')
+    }
+
+    await act(async () => {
+      railHandle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 240 }))
+      window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 300 }))
+    })
+
+    expect(railPane.style.width).toBe('300px')
+    expect(localStorage.getItem('layout.workspace.rail.width')).toBe('300')
+
+    await act(async () => {
+      contextHandle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 900 }))
+      window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 840 }))
+    })
+
+    expect(contextPane.style.width).toBe('340px')
+    expect(localStorage.getItem('layout.workspace.context.width')).toBe('340')
+
+    await act(async () => {
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }))
+    })
   })
 
   it('shows persisted save helper errors after autosave fails', async () => {

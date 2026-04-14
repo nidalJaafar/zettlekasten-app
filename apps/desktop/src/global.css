@@ -161,6 +161,39 @@ input, select, textarea, button {
   border-color: #3a4350 !important;
 }
 
+.pane-resize-handle {
+  width: 8px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  position: relative;
+  background: transparent;
+}
+
+.pane-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.04);
+  transition: background-color 120ms ease;
+}
+
+.pane-resize-handle:hover::before,
+.pane-resize-handle.is-dragging::before {
+  background: #3a4350;
+}
+
+.app-shell-resize-handle {
+  background: #111318;
+}
+
+.workspace-resize-handle {
+  background: #171a20;
+}
+
 .workspace-pane input::placeholder,
 .workspace-pane textarea::placeholder {
   color: #5e5b55;
