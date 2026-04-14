@@ -12,13 +12,17 @@ import {
 } from '@zettelkasten/core'
 
 export async function runInTransaction<T>(db: Database, work: () => Promise<T>): Promise<T> {
-  await db.execute('BEGIN')
+  try {
+    await db.execute('BEGIN')
+  } catch {
+    return work()
+  }
   try {
     const result = await work()
     await db.execute('COMMIT')
     return result
   } catch (error) {
-    await db.execute('ROLLBACK')
+    try { await db.execute('ROLLBACK') } catch {}
     throw error
   }
 }

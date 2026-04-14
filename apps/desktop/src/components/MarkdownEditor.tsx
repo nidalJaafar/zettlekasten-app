@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorView, type DecorationSet, type ViewUpdate, ViewPlugin, Decoration } from '@uiw/react-codemirror'
 import { RangeSetBuilder, Extension } from '@codemirror/state'
-import { getWikilinkTarget, getWikilinkText, getActiveWikilinkQuery, insertWikilinkSelection } from '../lib/wikilinks'
+import { getWikilinkTarget, getWikilinkText, getActiveWikilinkQuery, insertWikilinkSelection, type ActiveWikilinkQuery } from '../lib/wikilinks'
 import { BG, BORDER, TEXT, FONT, ACCENT } from '../theme'
 
 const WIKILINK_RE = /\[\[([^\]]+)\]\]/g
@@ -81,18 +81,44 @@ function wikilinkPlugin(onLinkClick: (text: string) => void) {
 }
 
 export default function MarkdownEditor({ value, onChange, placeholder, minHeight = '120px', readOnly = false, onLinkClick, wikilinkOptions, onCreateWikilinkNote }: Props) {
+  const [activeQuery, setActiveQuery] = useState<ActiveWikilinkQuery | null>(null)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
+  const optionsRef = useRef(wikilinkOptions)
+  optionsRef.current = wikilinkOptions
+  const readOnlyRef = useRef(readOnly)
+  readOnlyRef.current = readOnly
+  const cursorPosRef = useRef(value.length)
+
+  const cursorTracker = useMemo(() => EditorView.updateListener.of((update) => {
+    if (update.selectionSet) {
+      cursorPosRef.current = update.view.state.selection.main.head
+    }
+    if (update.docChanged || update.selectionSet) {
+      const text = update.view.state.doc.toString()
+      const query = (optionsRef.current && !readOnlyRef.current)
+        ? getActiveWikilinkQuery(text, cursorPosRef.current)
+        : null
+      setActiveQuery(query)
+      if (update.docChanged) {
+        setHighlightedIndex(0)
+      }
+    }
+  }), [])
+
+  useEffect(() => {
+    const query = (wikilinkOptions && !readOnly)
+      ? getActiveWikilinkQuery(value, cursorPosRef.current)
+      : null
+    setActiveQuery(query)
+  }, [value, wikilinkOptions, readOnly])
+
   const extensions = useMemo(() => {
-    const exts: Extension[] = [markdown(), EditorView.lineWrapping]
+    const exts: Extension[] = [markdown(), EditorView.lineWrapping, cursorTracker]
     if (onLinkClick) {
       exts.push(wikilinkPlugin(onLinkClick))
     }
     return exts
-  }, [onLinkClick])
-
-  const activeQuery = wikilinkOptions && !readOnly
-    ? getActiveWikilinkQuery(value, value.length)
-    : null
+  }, [onLinkClick, cursorTracker])
 
   const filteredOptions = activeQuery && wikilinkOptions
     ? wikilinkOptions.filter((opt) =>
