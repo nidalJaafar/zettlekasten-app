@@ -13,6 +13,13 @@ interface GraphEdge extends d3.SimulationLinkDatum<GraphNode> {
   target: string | GraphNode
 }
 
+interface StoredNodePosition {
+  x?: number
+  y?: number
+  fx?: number | null
+  fy?: number | null
+}
+
 interface Props {
   notes: Note[]
   links: NoteLink[]
@@ -22,13 +29,46 @@ interface Props {
   mode?: 'context' | 'full'
 }
 
+function applySelectedNodeStyles(
+  circles: d3.Selection<SVGCircleElement, GraphNode, SVGGElement, unknown>,
+  selectedNoteId?: string,
+) {
+  circles
+    .attr('fill', (d) => d.id === selectedNoteId ? '#222730' : '#1d2128')
+    .attr('stroke', (d) => d.id === selectedNoteId ? '#b4ab99' : '#6d8394')
+    .attr('stroke-opacity', (d) => d.id === selectedNoteId ? 0.9 : 0.55)
+    .attr('stroke-width', (d) => d.id === selectedNoteId ? 1.4 : 1)
+}
+
 export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, selectedNoteId, mode }: Props) {
   const svgRef = useRef<SVGSVGElement>(null)
+  const circlesRef = useRef<d3.Selection<SVGCircleElement, GraphNode, SVGGElement, unknown> | null>(null)
+  const onNodeClickRef = useRef(onNodeClick)
+  const zoomTransformRef = useRef(d3.zoomIdentity)
+  const nodePositionsRef = useRef(new Map<string, StoredNodePosition>())
 
   useEffect(() => {
-    if (!svgRef.current || notes.length === 0) return
+    onNodeClickRef.current = onNodeClick
+  }, [onNodeClick])
+
+  useEffect(() => {
+    if (circlesRef.current) {
+      applySelectedNodeStyles(circlesRef.current, selectedNoteId)
+    }
+  }, [selectedNoteId])
+
+  useEffect(() => {
+    if (!svgRef.current) return
 
     const svg = d3.select(svgRef.current)
+    zoomTransformRef.current = d3.zoomTransform(svgRef.current)
+
+    if (notes.length === 0) {
+      svg.selectAll('*').remove()
+      circlesRef.current = null
+      return
+    }
+
     svg.selectAll('*').remove()
 
     const width = svgRef.current.clientWidth
@@ -46,7 +86,8 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
       id: n.id,
       title: n.title,
       linkCount: linkCountMap.get(n.id) ?? 0,
-      ...(focusNoteId === n.id ? { fx: width / 2, fy: height / 2 } : {}),
+      ...nodePositionsRef.current.get(n.id),
+      ...(focusNoteId === n.id ? { x: width / 2, y: height / 2, fx: width / 2, fy: height / 2 } : {}),
     }))
 
     const edges: GraphEdge[] = links.map((l) => ({
@@ -61,12 +102,17 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
     const g = svg.append('g')
 
     // Zoom/pan
+    const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+      .extent([[0, 0], [width, height]])
+      .scaleExtent([0.2, 4])
+      .on('zoom', (event) => {
+        zoomTransformRef.current = event.transform
+        g.attr('transform', event.transform)
+      })
+
     svg.on('.zoom', null)
-    svg.call(
-      d3.zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.2, 4])
-        .on('zoom', (event) => g.attr('transform', event.transform))
-    )
+    svg.call(zoomBehavior)
+    svg.call(zoomBehavior.transform, zoomTransformRef.current)
 
     const linkDistance = mode === 'context' ? 80 : 140
     const chargeStrength = mode === 'context' ? -200 : -120
@@ -107,12 +153,11 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
           })
       )
 
-    node.append('circle')
+    const circles = node.append('circle')
       .attr('r', (d) => radiusScale(d.linkCount))
-      .attr('fill', (d) => d.id === selectedNoteId ? '#222730' : '#1d2128')
-      .attr('stroke', (d) => d.id === selectedNoteId ? '#b4ab99' : '#6d8394')
-      .attr('stroke-opacity', (d) => d.id === selectedNoteId ? 0.9 : 0.55)
-      .attr('stroke-width', (d) => d.id === selectedNoteId ? 1.4 : 1)
+
+    circlesRef.current = circles
+    applySelectedNodeStyles(circles, selectedNoteId)
 
     node.append('text')
       .attr('dy', (d) => radiusScale(d.linkCount) + 12)
@@ -125,7 +170,7 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
 
     node.on('click', (_, d) => {
       const note = notes.find((n) => n.id === d.id)
-      if (note) onNodeClick(note)
+      if (note) onNodeClickRef.current(note)
     })
 
     node.on('mouseover', (_, d) => {
@@ -149,17 +194,32 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
       link.attr('stroke-opacity', 0.45)
     })
 
-    simulation.on('tick', () => {
+    const renderPositions = () => {
+      nodes.forEach((graphNode) => {
+        nodePositionsRef.current.set(graphNode.id, {
+          x: graphNode.x,
+          y: graphNode.y,
+          fx: graphNode.fx,
+          fy: graphNode.fy,
+        })
+      })
+
       link
         .attr('x1', (d) => (d.source as GraphNode).x ?? 0)
         .attr('y1', (d) => (d.source as GraphNode).y ?? 0)
         .attr('x2', (d) => (d.target as GraphNode).x ?? 0)
         .attr('y2', (d) => (d.target as GraphNode).y ?? 0)
       node.attr('transform', (d) => `translate(${d.x ?? 0},${d.y ?? 0})`)
-    })
+    }
 
-    return () => { simulation.stop() }
-  }, [notes, links, onNodeClick, focusNoteId, selectedNoteId, mode])
+    renderPositions()
+    simulation.on('tick', renderPositions)
+
+    return () => {
+      simulation.stop()
+      circlesRef.current = null
+    }
+  }, [notes, links, focusNoteId, mode])
 
   return <svg ref={svgRef} width="100%" height="100%" style={{ background: '#0d0f13' }} />
 }
