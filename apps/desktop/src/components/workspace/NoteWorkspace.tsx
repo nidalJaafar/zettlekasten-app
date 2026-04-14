@@ -118,7 +118,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
       setWikilinkOptions(rows)
     })
     return () => { cancelled = true }
-  }, [db, draft.content, draft.title])
+  }, [db, target])
 
   useEffect(() => {
     let cancelled = false
