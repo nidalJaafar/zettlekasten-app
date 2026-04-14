@@ -75,8 +75,10 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {queue.map((note) => (
-            <div
+            <button
               key={note.id}
+              type="button"
+              onClick={() => void onOpenNoteId(note.id)}
               data-testid="review-card"
               style={{
                 background: BG.raised,
@@ -88,6 +90,9 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
                 flexDirection: 'row',
                 alignItems: 'stretch',
                 gap: 16,
+                textAlign: 'left',
+                cursor: 'pointer',
+                width: '100%',
               }}
             >
               <div
@@ -138,24 +143,6 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
                     }} data-testid="review-card-chip">
                       {note.type}
                     </span>
-                    <button
-                      onClick={() => void onOpenNoteId(note.id)}
-                      data-testid="review-card-open-action"
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: TEXT.secondary,
-                        fontFamily: FONT.ui,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        padding: 0,
-                        letterSpacing: '0.04em',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Open in Workspace
-                    </button>
                   </div>
                 </div>
                 <div
@@ -172,7 +159,7 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
                   {previewText(note.content) ?? 'No content yet. Open this note to continue shaping it.'}
                 </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>

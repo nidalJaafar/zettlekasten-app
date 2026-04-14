@@ -88,26 +88,33 @@ describe('ReviewScreen', () => {
     expect(title?.style.fontFamily).not.toBe(FONT.display)
   })
 
-  it('shows preview text under the title and keeps the workspace action visible', async () => {
+  it('shows preview text under the title, hides the workspace action, and opens the note when the row is clicked', async () => {
     vi.mocked(getNotesByType).mockResolvedValue([
       makeNote({ content: 'A roomy preview for the review card.' }),
     ])
+    const onOpenNoteId = vi.fn(async () => {})
 
     await act(async () => {
       root.render(
-        <ReviewScreen db={createFakeDb() as any} onOpenNoteId={vi.fn(async () => {})} />
+        <ReviewScreen db={createFakeDb() as any} onOpenNoteId={onOpenNoteId} />
       )
       await flushEffects()
     })
 
     expect(container.textContent).toContain('Unreadable title')
     expect(container.textContent).toContain('A roomy preview for the review card.')
+    expect(container.textContent).not.toContain('Open in Workspace')
 
-    const button = Array.from(container.querySelectorAll('button')).find(
-      (element) => element.textContent === 'Open in Workspace'
-    )
+    const card = container.querySelector('[data-testid="review-card"]') as HTMLElement | null
 
-    expect(button).toBeTruthy()
+    expect(card).toBeTruthy()
+
+    await act(async () => {
+      card?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushEffects()
+    })
+
+    expect(onOpenNoteId).toHaveBeenCalledWith('note-1')
   })
 
   it('shows fallback preview text when note content is empty', async () => {
@@ -193,7 +200,7 @@ describe('ReviewScreen', () => {
     expect(titles).toEqual(['Earlier fleeting', 'Middle literature', 'Later fleeting'])
   })
 
-  it('renders each redesigned card as a horizontal row with an accent strip and integrated action metadata', async () => {
+  it('renders each redesigned card as a horizontal row with an accent strip and integrated metadata', async () => {
     const db = createFakeDb()
     db.query.mockResolvedValue([
       makeNote({ id: 'lit-2', title: 'Literature card', type: 'literature' }),
@@ -217,15 +224,13 @@ describe('ReviewScreen', () => {
       const metadata = card.querySelector('[data-testid="review-card-meta"]') as HTMLElement | null
       const preview = card.querySelector('[data-testid="review-card-preview"]') as HTMLElement | null
       const chip = card.querySelector('[data-testid="review-card-chip"]')
-      const action = card.querySelector('[data-testid="review-card-open-action"]')
 
       expect(accent).toBeTruthy()
       expect(accent?.style.width).toBe('6px')
       expect(metadata).toBeTruthy()
       expect(metadata?.textContent).toContain(index === 0 ? 'fleeting' : 'literature')
-      expect(metadata?.textContent).toContain('Open in Workspace')
       expect(metadata?.querySelector('[data-testid="review-card-chip"]')).toBe(chip)
-      expect(metadata?.querySelector('[data-testid="review-card-open-action"]')).toBe(action)
+      expect(card.querySelector('[data-testid="review-card-open-action"]')).toBeNull()
       expect(preview).toBeTruthy()
     }
   })
