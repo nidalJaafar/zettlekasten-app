@@ -17,6 +17,7 @@ interface Props {
   onLinkClick?: (linkText: string) => void
   wikilinkOptions?: WikilinkOption[]
   onCreateWikilinkNote?: (title: string) => Promise<{ id: string; title: string }>
+  sourceLabel?: string | null
 }
 
 export default function DocumentPane({
@@ -32,6 +33,7 @@ export default function DocumentPane({
   onLinkClick,
   wikilinkOptions,
   onCreateWikilinkNote,
+  sourceLabel,
 }: Props) {
   const [isRenderedView, setIsRenderedView] = useState(defaultMode === 'preview')
   const titleRef = useRef<HTMLTextAreaElement | null>(null)
@@ -161,6 +163,17 @@ export default function DocumentPane({
               overflowWrap: 'break-word',
             }}
           />
+          {isRenderedView && sourceLabel && (
+            <div style={{
+              color: TEXT.muted,
+              fontSize: 12,
+              fontFamily: FONT.ui,
+              marginBottom: 16,
+              fontStyle: 'italic',
+            }}>
+              {sourceLabel}
+            </div>
+          )}
           {isRenderedView ? (
             <div
               className="rendered-markdown"
