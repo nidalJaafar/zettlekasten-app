@@ -15,22 +15,37 @@ The current Review screen feels too custom and too different from Library. The u
 - Reuse the overall Library layout style for Review.
 - Keep the current Review colors as they are.
 - Review should feel like `Library + actions`, not like a separate workflow dashboard.
+- Prefer the Library row/card shell rather than the newer custom multi-zone Review card treatment.
 
 ### Structure
 
 Each Review item should follow the same overall reading pattern as Library:
 
+- left accent strip
 - main content area led by title and note body preview
-- quiet secondary metadata treatment
+- quiet secondary metadata treatment integrated into the content block
 - actions added in a way that does not overpower the item
 
 The list should read as a calm stack of entries rather than as task cards.
+
+Review items should move away from:
+
+- boxed inner preview panels
+- heavy card segmentation
+- action-footer treatment that makes the row feel like a workflow widget
+
+Review items should move toward:
+
+- Library-style horizontal row cards
+- calmer text flow
+- integrated actions within the row layout
 
 ### Review-specific behavior
 
 - Keep the Review queue loading/filtering behavior unchanged.
 - Keep the existing `Open in Workspace` action.
 - Keep type information visible, but integrated into the Library-like layout rather than emphasized as a separate card treatment.
+- Keep the action obvious, but not louder than the Library-like row shell.
 
 ### Color rule
 
@@ -41,6 +56,7 @@ The list should read as a calm stack of entries rather than as task cards.
 ## Implementation outline
 
 - Update `apps/desktop/src/screens/ReviewScreen.tsx` to mirror the Library screen's structural layout more closely.
+- Rework Review rows to use a Library-like horizontal entry structure with a left accent strip and integrated action area.
 - Keep Review-specific buttons and queue metadata.
 - Update `apps/desktop/src/screens/ReviewScreen.test.tsx` to reflect the new structure.
 
@@ -49,6 +65,7 @@ The list should read as a calm stack of entries rather than as task cards.
 Add or update tests for:
 
 - Library-like Review row/card structure
+- left accent strip and Library-style row shell
 - retained Review action rendering
 - unchanged Review queue behavior
 
