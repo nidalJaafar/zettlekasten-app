@@ -97,6 +97,75 @@ export async function createPermanentDraft(
   })
 }
 
+const AMBIGUOUS_TITLE_PROPAGATION_ERROR = 'Cannot propagate title-based wikilinks for ambiguous active titles.'
+
+export function rewriteTitleBasedWikilinks(content: string, oldTitle: string, newTitle: string): string {
+  if (oldTitle === newTitle || oldTitle.trim() === '' || newTitle.trim() === '') {
+    return content
+  }
+
+  return content.replace(/\[\[([^\[\]\|]+)(\|[^\[\]]*)?\]\]/g, (match, target: string, alias?: string) => {
+    if (target !== oldTitle) {
+      return match
+    }
+
+    return `[[${newTitle}${alias ?? ''}]]`
+  })
+}
+
+export async function syncTitleBasedWikilinks(db: Database, oldTitle: string, newTitle: string): Promise<void> {
+  if (oldTitle === newTitle || oldTitle.trim() === '' || newTitle.trim() === '') {
+    return
+  }
+
+  const notes = await db.query<Pick<Note, 'id' | 'content'>>(
+    'SELECT id, content FROM notes'
+  )
+
+  for (const note of notes) {
+    const nextContent = rewriteTitleBasedWikilinks(note.content, oldTitle, newTitle)
+    if (nextContent !== note.content) {
+      await updateNote(db, note.id, { content: nextContent })
+    }
+  }
+}
+
+async function hasAnotherActiveNoteWithTitle(db: Database, noteId: string, title: string): Promise<boolean> {
+  const match = await db.queryOne<{ id: string }>(
+    'SELECT id FROM notes WHERE title = ? AND deleted_at IS NULL AND id != ? LIMIT 1',
+    [title, noteId]
+  )
+
+  return match !== null
+}
+
+export async function savePersistedNote(
+  db: Database,
+  note: Note,
+  updates: {
+    title: string
+    content: string
+    source_id?: string | null
+  }
+): Promise<void> {
+  await runInTransaction(db, async () => {
+    if (note.title.trim() !== '' && updates.title.trim() !== '' && note.title !== updates.title) {
+      if (
+        await hasAnotherActiveNoteWithTitle(db, note.id, note.title)
+        || await hasAnotherActiveNoteWithTitle(db, note.id, updates.title)
+      ) {
+        throw new Error(AMBIGUOUS_TITLE_PROPAGATION_ERROR)
+      }
+
+      await updateNote(db, note.id, updates)
+      await syncTitleBasedWikilinks(db, note.title, updates.title)
+      return
+    }
+
+    await updateNote(db, note.id, updates)
+  })
+}
+
 export async function syncNoteLinks(db: Database, noteId: string, nextLinkedIds: string[]): Promise<void> {
   const currentLinkedIds = await getLinkedNoteIds(db, noteId)
   const currentSet = new Set(currentLinkedIds)

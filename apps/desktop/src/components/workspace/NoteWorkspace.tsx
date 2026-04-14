@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { createNote, getLinkedNoteIds, getNoteById, softDeleteNote, updateNote, type Database, type Note } from '@zettelkasten/core'
+import { createNote, getLinkedNoteIds, getNoteById, softDeleteNote, type Database, type Note } from '@zettelkasten/core'
 import type { WorkspaceTarget } from '../../App'
 import { BG, BORDER } from '../../theme'
 import {
   createPermanentDraft,
   promoteFleetingToLiterature,
+  savePersistedNote,
   saveLiteratureAsPermanent,
   syncNoteLinks,
 } from '../../lib/note-workflow'
@@ -181,8 +182,9 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         content: draft.content,
         sourceId: draft.sourceId,
       }
+      setError(null)
       setSaveState('saving')
-      void updateNote(db, loadedNote.id, {
+      void savePersistedNote(db, loadedNote, {
         title: draft.title,
         content: draft.content,
         ...(loadedNote.type !== 'permanent' ? { source_id: draft.sourceId } : {}),
@@ -192,22 +194,24 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
             return
           }
           inFlightSave.current = null
-          setLoadedNote((current) => (current && current.id === loadedNote.id
-            ? {
-                ...current,
-                title: draft.title,
-                content: draft.content,
+           setLoadedNote((current) => (current && current.id === loadedNote.id
+             ? {
+                 ...current,
+                 title: draft.title,
+                 content: draft.content,
                 source_id: loadedNote.type === 'permanent' ? current.source_id : draft.sourceId,
                 updated_at: Date.now(),
-              }
-            : current))
-          setSaveState('saved')
-        })
-        .catch(() => {
+               }
+             : current))
+           setError(null)
+           setSaveState('saved')
+         })
+        .catch((err) => {
           if (targetVersion.current !== saveVersion) {
             return
           }
           inFlightSave.current = null
+          setError(err instanceof Error ? err.message : String(err))
           setSaveState('error')
         })
     }, 450)

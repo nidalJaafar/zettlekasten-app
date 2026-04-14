@@ -3,20 +3,25 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Database, Note } from '@zettelkasten/core'
 import NoteWorkspace from './NoteWorkspace'
-import { createNote, getLinkedNoteIds, getNoteById, softDeleteNote, updateNote } from '@zettelkasten/core'
-import { promoteFleetingToLiterature, saveLiteratureAsPermanent, syncNoteLinks } from '../../lib/note-workflow'
+import { createNote, getLinkedNoteIds, getNoteById, softDeleteNote } from '@zettelkasten/core'
+import {
+  promoteFleetingToLiterature,
+  saveLiteratureAsPermanent,
+  savePersistedNote,
+  syncNoteLinks,
+} from '../../lib/note-workflow'
 
 vi.mock('@zettelkasten/core', () => ({
   createNote: vi.fn(),
   getLinkedNoteIds: vi.fn(),
   getNoteById: vi.fn(),
   softDeleteNote: vi.fn(),
-  updateNote: vi.fn(),
 }))
 
 vi.mock('../../lib/note-workflow', () => ({
   promoteFleetingToLiterature: vi.fn(),
   saveLiteratureAsPermanent: vi.fn(),
+  savePersistedNote: vi.fn(),
   syncNoteLinks: vi.fn(),
 }))
 
@@ -64,6 +69,7 @@ vi.mock('./NoteContextPane', () => ({
     draftType,
     sourceId,
     linkedIds,
+    error,
     onDeleteNote,
     onSourceIdChange,
     onToggleLink,
@@ -74,6 +80,7 @@ vi.mock('./NoteContextPane', () => ({
     draftType: 'literature' | 'permanent' | null
     sourceId: string | null
     linkedIds: string[]
+    error: string | null
     onDeleteNote?: () => void
     onSourceIdChange: (value: string | null) => void
     onToggleLink: (value: string) => void
@@ -85,6 +92,7 @@ vi.mock('./NoteContextPane', () => ({
       <div>Context draft type: {draftType ?? 'none'}</div>
       <div>Context source: {sourceId ?? 'none'}</div>
       <div>Context links: {linkedIds.join(',') || 'none'}</div>
+      <div>Context error: {error ?? 'none'}</div>
       <button onClick={() => onSourceIdChange('source-picked')}>Pick source</button>
       <button onClick={() => onToggleLink('existing-link')}>Toggle existing link</button>
       <button onClick={() => onToggleLink('link-picked')}>Toggle picked link</button>
@@ -176,7 +184,6 @@ describe('NoteWorkspace', () => {
     } as Note)
     vi.mocked(getLinkedNoteIds).mockResolvedValue([])
     vi.mocked(softDeleteNote).mockResolvedValue(undefined)
-    vi.mocked(updateNote).mockResolvedValue(undefined)
     vi.mocked(promoteFleetingToLiterature).mockResolvedValue(undefined)
     vi.mocked(saveLiteratureAsPermanent).mockResolvedValue({
       id: 'permanent-created',
@@ -190,6 +197,7 @@ describe('NoteWorkspace', () => {
       deleted_at: null,
       processed_at: null,
     } as Note)
+    vi.mocked(savePersistedNote).mockResolvedValue(undefined)
     vi.mocked(syncNoteLinks).mockResolvedValue(undefined)
   })
 
@@ -237,19 +245,60 @@ describe('NoteWorkspace', () => {
     await act(async () => {
       vi.advanceTimersByTime(449)
     })
-    expect(updateNote).not.toHaveBeenCalled()
+    expect(savePersistedNote).not.toHaveBeenCalled()
 
     await act(async () => {
       vi.advanceTimersByTime(1)
       await flushEffects()
     })
 
-    expect(updateNote).toHaveBeenCalledWith(db, 'note-1', {
-      title: 'Updated title',
-      content: 'Updated body',
-      source_id: 'source-1',
-    })
+    expect(savePersistedNote).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({ id: 'note-1', title: 'Loaded note' }),
+      {
+        title: 'Updated title',
+        content: 'Updated body',
+        source_id: 'source-1',
+      }
+    )
     expect(container.textContent).toContain('Pane save state: saved')
+  })
+
+  it('routes persisted autosaves through the note workflow helper when the title changes', async () => {
+    const db = createFakeDb()
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Change title')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(450)
+      await flushEffects()
+    })
+
+    expect(savePersistedNote).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({ id: 'note-1', title: 'Loaded note' }),
+      {
+        title: 'Updated title',
+        content: 'Loaded body',
+        source_id: 'source-1',
+      }
+    )
   })
 
   it('opens a linked note from the document pane by matching its title', async () => {
@@ -293,7 +342,7 @@ describe('NoteWorkspace', () => {
   it('stays in saving state without scheduling duplicate saves while a save is in flight', async () => {
     const db = createFakeDb()
     let resolveSave: (() => void) | null = null
-    vi.mocked(updateNote).mockImplementation(() => new Promise<void>((resolve) => {
+    vi.mocked(savePersistedNote).mockImplementation(() => new Promise<void>((resolve) => {
       resolveSave = resolve
     }))
 
@@ -323,7 +372,7 @@ describe('NoteWorkspace', () => {
       await flushEffects()
     })
 
-    expect(updateNote).toHaveBeenCalledTimes(1)
+    expect(savePersistedNote).toHaveBeenCalledTimes(1)
     expect(container.textContent).toContain('Pane save state: saving')
 
     await act(async () => {
@@ -331,7 +380,7 @@ describe('NoteWorkspace', () => {
       await flushEffects()
     })
 
-    expect(updateNote).toHaveBeenCalledTimes(1)
+    expect(savePersistedNote).toHaveBeenCalledTimes(1)
     expect(container.textContent).toContain('Pane save state: saving')
 
     await act(async () => {
@@ -340,6 +389,41 @@ describe('NoteWorkspace', () => {
     })
 
     expect(container.textContent).toContain('Pane save state: saved')
+  })
+
+  it('shows persisted save helper errors after autosave fails', async () => {
+    const db = createFakeDb()
+    vi.mocked(savePersistedNote).mockRejectedValueOnce(
+      new Error('Cannot propagate title-based wikilinks for ambiguous active titles.')
+    )
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Change title')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(450)
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Pane save state: error')
+    expect(container.textContent).toContain(
+      'Context error: Cannot propagate title-based wikilinks for ambiguous active titles.'
+    )
   })
 
   it('marks draft targets as unsaved instead of falsely reporting saved', async () => {
@@ -360,7 +444,7 @@ describe('NoteWorkspace', () => {
 
     expect(container.textContent).toContain('Pane save state: dirty')
     expect(container.textContent).toContain('Pane mode: editable')
-    expect(updateNote).not.toHaveBeenCalled()
+    expect(savePersistedNote).not.toHaveBeenCalled()
     expect(container.textContent).not.toContain('Delete note')
   })
 
@@ -439,7 +523,7 @@ describe('NoteWorkspace', () => {
 
     expect(confirmSpy).toHaveBeenCalled()
     expect(softDeleteNote).toHaveBeenCalledWith(db, 'note-1')
-    expect(updateNote).not.toHaveBeenCalled()
+    expect(savePersistedNote).not.toHaveBeenCalled()
   })
 
   it('resumes autosave after delete fails for a dirty note', async () => {
@@ -488,11 +572,15 @@ describe('NoteWorkspace', () => {
 
     expect(confirmSpy).toHaveBeenCalled()
     expect(softDeleteNote).toHaveBeenCalledWith(db, 'note-1')
-    expect(updateNote).toHaveBeenCalledWith(db, 'note-1', {
-      title: 'Updated title',
-      content: 'Loaded body',
-      source_id: 'source-1',
-    })
+    expect(savePersistedNote).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({ id: 'note-1', title: 'Loaded note' }),
+      {
+        title: 'Updated title',
+        content: 'Loaded body',
+        source_id: 'source-1',
+      }
+    )
   })
 
   it('ignores stale save completion after switching to another target', async () => {
@@ -524,7 +612,7 @@ describe('NoteWorkspace', () => {
         processed_at: null,
       } as Note)
 
-    vi.mocked(updateNote).mockImplementation(() => new Promise<void>((resolve) => {
+    vi.mocked(savePersistedNote).mockImplementation(() => new Promise<void>((resolve) => {
       resolveFirstSave = resolve
     }))
 
@@ -587,7 +675,7 @@ describe('NoteWorkspace', () => {
 
     expect(container.textContent).toContain('Pane title: Updated title')
     expect(container.textContent).toContain('Pane save state: dirty')
-    expect(updateNote).toHaveBeenCalledTimes(1)
+    expect(savePersistedNote).toHaveBeenCalledTimes(1)
   })
 
   it('creates a literature note from a draft target and opens it', async () => {
