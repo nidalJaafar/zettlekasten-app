@@ -112,4 +112,97 @@ describe('MarkdownEditor', () => {
 
     expect(onLinkClick).toHaveBeenCalledWith('Alpha Note')
   })
+
+  it('shows wikilink suggestions when value contains an open wikilink query', async () => {
+    await act(async () => {
+      root.render(
+        <MarkdownEditor
+          value="See [[Al"
+          onChange={vi.fn()}
+          wikilinkOptions={[{ id: '1', title: 'Alpha Note' }, { id: '2', title: 'Another Note' }]}
+        />
+      )
+    })
+
+    expect(container.textContent).toContain('Alpha Note')
+    expect(container.textContent).not.toContain('Another Note')
+  })
+
+  it('does not show the picker when wikilinkOptions is not provided', async () => {
+    await act(async () => {
+      root.render(
+        <MarkdownEditor
+          value="See [[Al"
+          onChange={vi.fn()}
+        />
+      )
+    })
+
+    expect(container.querySelector('.wikilink-picker')).toBeNull()
+  })
+
+  it('calls onCreateWikilinkNote and inserts wikilink when create-new is clicked', async () => {
+    const onCreateWikilinkNote = vi.fn(async () => ({ id: 'new-1', title: 'Missing Note' }))
+    const onChange = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <MarkdownEditor
+          value="See [[Missing Note"
+          onChange={onChange}
+          wikilinkOptions={[]}
+          onCreateWikilinkNote={onCreateWikilinkNote}
+        />
+      )
+    })
+
+    const createOption = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Create new fleeting note')
+    )
+
+    await act(async () => {
+      createOption?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onCreateWikilinkNote).toHaveBeenCalledWith('Missing Note')
+    expect(onChange).toHaveBeenCalledWith('See [[Missing Note]]')
+  })
+
+  it('inserts a selected existing note as a completed wikilink', async () => {
+    const onChange = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <MarkdownEditor
+          value="See [[Al"
+          onChange={onChange}
+          wikilinkOptions={[{ id: '1', title: 'Alpha Note' }]}
+        />
+      )
+    })
+
+    const option = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Alpha Note')
+    )
+
+    await act(async () => {
+      option?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onChange).toHaveBeenCalledWith('See [[Alpha Note]]')
+  })
+
+  it('hides the picker when no open wikilink query exists', async () => {
+    await act(async () => {
+      root.render(
+        <MarkdownEditor
+          value="See [[Alpha Note]] done"
+          onChange={vi.fn()}
+          wikilinkOptions={[{ id: '1', title: 'Alpha Note' }]}
+        />
+      )
+    })
+
+    expect(container.querySelector('.wikilink-picker')).toBeNull()
+  })
 })

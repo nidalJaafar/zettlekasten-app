@@ -1,11 +1,17 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
-import { EditorView, type DecorationSet, type ViewUpdate, ViewPlugin, Decoration } from '@codemirror/view'
+import { EditorView, type DecorationSet, type ViewUpdate, ViewPlugin, Decoration } from '@uiw/react-codemirror'
 import { RangeSetBuilder, Extension } from '@codemirror/state'
-import { getWikilinkTarget, getWikilinkText } from '../lib/wikilinks'
+import { getWikilinkTarget, getWikilinkText, getActiveWikilinkQuery, insertWikilinkSelection } from '../lib/wikilinks'
+import { BG, BORDER, TEXT, FONT, ACCENT } from '../theme'
 
 const WIKILINK_RE = /\[\[([^\]]+)\]\]/g
+
+export interface WikilinkOption {
+  id: string
+  title: string
+}
 
 interface Props {
   value: string
@@ -14,6 +20,8 @@ interface Props {
   minHeight?: string
   readOnly?: boolean
   onLinkClick?: (linkText: string) => void
+  wikilinkOptions?: WikilinkOption[]
+  onCreateWikilinkNote?: (title: string) => Promise<{ id: string; title: string }>
 }
 
 function wikilinkPlugin(onLinkClick: (text: string) => void) {
@@ -72,7 +80,8 @@ function wikilinkPlugin(onLinkClick: (text: string) => void) {
   })
 }
 
-export default function MarkdownEditor({ value, onChange, placeholder, minHeight = '120px', readOnly = false, onLinkClick }: Props) {
+export default function MarkdownEditor({ value, onChange, placeholder, minHeight = '120px', readOnly = false, onLinkClick, wikilinkOptions, onCreateWikilinkNote }: Props) {
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
   const extensions = useMemo(() => {
     const exts: Extension[] = [markdown(), EditorView.lineWrapping]
     if (onLinkClick) {
@@ -81,22 +90,114 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
     return exts
   }, [onLinkClick])
 
+  const activeQuery = wikilinkOptions && !readOnly
+    ? getActiveWikilinkQuery(value, value.length)
+    : null
+
+  const filteredOptions = activeQuery && wikilinkOptions
+    ? wikilinkOptions.filter((opt) =>
+        opt.title.toLowerCase().includes(activeQuery.query.toLowerCase())
+      )
+    : []
+
+  function handleOptionSelect(title: string) {
+    if (!activeQuery) return
+    const result = insertWikilinkSelection(value, activeQuery, title)
+    onChange(result.value)
+  }
+
+  async function handleCreateOption(title: string) {
+    if (!onCreateWikilinkNote || !activeQuery) return
+    const created = await onCreateWikilinkNote(title)
+    const result = insertWikilinkSelection(value, activeQuery, created.title)
+    onChange(result.value)
+  }
+
+  const showPicker = activeQuery && (filteredOptions.length > 0 || (activeQuery.query.trim() !== '' && onCreateWikilinkNote))
+
   return (
-    <CodeMirror
-      value={value}
-      onChange={onChange}
-      editable={!readOnly}
-      readOnly={readOnly}
-      extensions={extensions}
-      placeholder={placeholder}
-      theme="dark"
-      style={{ minHeight }}
-      basicSetup={{
-        lineNumbers: true,
-        foldGutter: false,
-        highlightActiveLine: true,
-        highlightSelectionMatches: false,
-      }}
-    />
+    <div style={{ position: 'relative' }}>
+      <CodeMirror
+        value={value}
+        onChange={onChange}
+        editable={!readOnly}
+        readOnly={readOnly}
+        extensions={extensions}
+        placeholder={placeholder}
+        theme="dark"
+        style={{ minHeight }}
+        basicSetup={{
+          lineNumbers: true,
+          foldGutter: false,
+          highlightActiveLine: true,
+          highlightSelectionMatches: false,
+        }}
+      />
+      {showPicker && (
+        <div
+          className="wikilink-picker"
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: 0,
+            right: 0,
+            maxHeight: 180,
+            overflowY: 'auto',
+            background: BG.raised,
+            border: `1px solid ${BORDER.base}`,
+            borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            zIndex: 10,
+            padding: 4,
+          }}
+        >
+          {filteredOptions.map((option, index) => (
+            <button
+              key={option.id}
+              onClick={() => handleOptionSelect(option.title)}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                border: 'none',
+                background: index === highlightedIndex ? BG.hover : 'transparent',
+                color: TEXT.primary,
+                padding: '6px 10px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontFamily: FONT.ui,
+                fontSize: 13,
+              }}
+            >
+              {option.title}
+            </button>
+          ))}
+          {activeQuery.query.trim() !== '' && onCreateWikilinkNote && (
+            <button
+              onClick={() => void handleCreateOption(activeQuery.query.trim())}
+              onMouseEnter={() => setHighlightedIndex(filteredOptions.length)}
+              style={{
+                display: 'block',
+                width: '100%',
+                textAlign: 'left',
+                border: 'none',
+                background: highlightedIndex === filteredOptions.length ? BG.hover : 'transparent',
+                color: ACCENT.ink,
+                padding: '6px 10px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontFamily: FONT.ui,
+                fontSize: 13,
+                borderTop: `1px solid ${BORDER.faint}`,
+                marginTop: 2,
+              }}
+            >
+              Create new fleeting note &ldquo;{activeQuery.query.trim()}&rdquo;
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
