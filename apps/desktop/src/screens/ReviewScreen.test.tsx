@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Note } from '@zettelkasten/core'
 import { getNotesByType } from '@zettelkasten/core'
 import ReviewScreen from './ReviewScreen'
-import { FONT } from '../theme'
+import { FONT, typeColor } from '../theme'
 
 vi.mock('@zettelkasten/core', () => ({
   getNotesByType: vi.fn(),
@@ -41,6 +41,14 @@ function makeNote(overrides: Partial<Note> = {}): Note {
 async function flushEffects() {
   await Promise.resolve()
   await Promise.resolve()
+}
+
+function toRgb(hex: string): string {
+  const normalized = hex.replace('#', '')
+  const red = Number.parseInt(normalized.slice(0, 2), 16)
+  const green = Number.parseInt(normalized.slice(2, 4), 16)
+  const blue = Number.parseInt(normalized.slice(4, 6), 16)
+  return `rgb(${red}, ${green}, ${blue})`
 }
 
 describe('ReviewScreen', () => {
@@ -219,6 +227,39 @@ describe('ReviewScreen', () => {
       expect(metadata?.querySelector('[data-testid="review-card-chip"]')).toBe(chip)
       expect(metadata?.querySelector('[data-testid="review-card-open-action"]')).toBe(action)
       expect(preview).toBeTruthy()
+    }
+  })
+
+  it('keeps note-type accents inside the library-style review shell', async () => {
+    const db = createFakeDb()
+    vi.mocked(getNotesByType).mockResolvedValue([
+      makeNote({ id: 'fleeting-1', title: 'Fleeting accent', type: 'fleeting' }),
+    ])
+    db.query.mockResolvedValue([
+      makeNote({ id: 'lit-3', title: 'Literature accent', type: 'literature' }),
+    ])
+
+    await act(async () => {
+      root.render(
+        <ReviewScreen db={db as any} onOpenNoteId={vi.fn(async () => {})} />
+      )
+      await flushEffects()
+    })
+
+    const cards = Array.from(container.querySelectorAll('[data-testid="review-card"]'))
+
+    expect(cards).toHaveLength(2)
+
+    for (const [index, card] of cards.entries()) {
+      const noteType = index === 0 ? 'fleeting' : 'literature'
+      const accent = card.querySelector('[data-testid="review-card-accent"]') as HTMLElement | null
+      const chip = card.querySelector('[data-testid="review-card-chip"]') as HTMLElement | null
+      const expectedColor = toRgb(typeColor(noteType))
+
+      expect(accent).toBeTruthy()
+      expect(accent?.style.background).toBe(expectedColor)
+      expect(chip).toBeTruthy()
+      expect(chip?.style.color).toBe(expectedColor)
     }
   })
 })
