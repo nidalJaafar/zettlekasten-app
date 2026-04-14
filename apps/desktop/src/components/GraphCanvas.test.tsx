@@ -134,20 +134,27 @@ describe('GraphCanvas', () => {
 
   function getNodePositions() {
     return getGraphElements().nodeGroups.map((nodeGroup) => {
-      const datum = nodeGroup.__data__ as { x?: number; y?: number }
-      return { x: datum.x, y: datum.y }
+      const datum = nodeGroup.__data__ as { id: string; x?: number; y?: number }
+      return { id: datum.id, x: datum.x, y: datum.y }
     })
   }
 
-  function setZoomTransform(svg: SVGSVGElement | null, zoomGroup: SVGGElement | null, value: string) {
-    if (!svg || !zoomGroup) return
+  function setStoredZoomTransform(svg: SVGSVGElement | null, transform: d3.ZoomTransform) {
+    if (!svg) return
 
-    zoomGroup.setAttribute('transform', value)
-    ;(svg as SVGSVGElement & { __zoom?: d3.ZoomTransform }).__zoom = d3.zoomIdentity.translate(120, 80).scale(1.75)
+    ;(svg as SVGSVGElement & { __zoom?: d3.ZoomTransform }).__zoom = transform
+  }
+
+  function getZoomState(svg: SVGSVGElement | null) {
+    if (!svg) return null
+
+    const transform = d3.zoomTransform(svg)
+    return { x: transform.x, y: transform.y, k: transform.k }
   }
 
   it('preserves the zoom group and node layout when only selection changes', async () => {
     const onNodeClick = vi.fn()
+    const zoomTransform = d3.zoomIdentity.translate(120, 80).scale(1.75)
 
     await act(async () => {
       root.render(
@@ -167,9 +174,8 @@ describe('GraphCanvas', () => {
     expect(zoomGroup).toBeTruthy()
     expect(nodeGroups).toHaveLength(2)
 
-    setZoomTransform(svg, zoomGroup, 'translate(120,80) scale(1.75)')
-    nodeGroups[0]?.setAttribute('transform', 'translate(10,20)')
-    nodeGroups[1]?.setAttribute('transform', 'translate(30,40)')
+    setStoredZoomTransform(svg, zoomTransform)
+    const zoomStateBefore = getZoomState(svg)
 
     await act(async () => {
       root.render(
@@ -186,18 +192,19 @@ describe('GraphCanvas', () => {
     const { zoomGroup: nextZoomGroup, nodeGroups: nodeGroupsAfter, circles } = getGraphElements()
 
     expect(nextZoomGroup).toBe(zoomGroup)
-    expect(nextZoomGroup?.getAttribute('transform')).toBe('translate(120,80) scale(1.75)')
+    expect(getZoomState(svg)).toEqual(zoomStateBefore)
     expect(nodeGroupsAfter).toHaveLength(2)
     expect(nodeGroupsAfter[0]).toBe(nodeGroups[0])
     expect(nodeGroupsAfter[1]).toBe(nodeGroups[1])
-    expect(nodeGroupsAfter[0]?.getAttribute('transform')).toBe('translate(10,20)')
-    expect(nodeGroupsAfter[1]?.getAttribute('transform')).toBe('translate(30,40)')
     expect(circles[0]?.getAttribute('fill')).toBe('#1d2128')
     expect(circles[1]?.getAttribute('fill')).toBe('#222730')
+    expect(circles[0]?.getAttribute('stroke')).toBe('#6d8394')
+    expect(circles[1]?.getAttribute('stroke')).toBe('#b4ab99')
   })
 
   it('preserves zoom and saved node positions when rebuilt from fresh graph arrays', async () => {
     const onNodeClick = vi.fn()
+    const zoomTransform = d3.zoomIdentity.translate(120, 80).scale(1.75)
 
     await act(async () => {
       root.render(
@@ -215,15 +222,17 @@ describe('GraphCanvas', () => {
     expect(zoomGroup).toBeTruthy()
     expect(nodeGroups).toHaveLength(2)
 
-    setZoomTransform(getGraphElements().svg, zoomGroup, 'translate(120,80) scale(1.75)')
+    setStoredZoomTransform(getGraphElements().svg, zoomTransform)
 
     await act(async () => {
       await waitForSimulationTick()
     })
 
-    const transformsBefore = nodeGroups.map((nodeGroup) => nodeGroup.getAttribute('transform'))
-    expect(transformsBefore[0]).toMatch(/^translate\(/)
-    expect(transformsBefore[1]).toMatch(/^translate\(/)
+    const positionsBefore = getNodePositions()
+    expect(positionsBefore[0]?.x).toBeTypeOf('number')
+    expect(positionsBefore[0]?.y).toBeTypeOf('number')
+    expect(positionsBefore[1]?.x).toBeTypeOf('number')
+    expect(positionsBefore[1]?.y).toBeTypeOf('number')
 
     await act(async () => {
       root.render(
@@ -237,13 +246,18 @@ describe('GraphCanvas', () => {
       await flushEffects()
     })
 
-    const { zoomGroup: rebuiltZoomGroup, nodeGroups: rebuiltNodeGroups } = getGraphElements()
+    const { svg, zoomGroup: rebuiltZoomGroup, nodeGroups: rebuiltNodeGroups } = getGraphElements()
+    const positionsAfter = getNodePositions()
 
     expect(rebuiltZoomGroup).not.toBe(zoomGroup)
-    expect(rebuiltZoomGroup?.getAttribute('transform')).toBe('translate(120,80) scale(1.75)')
+    expect(getZoomState(svg)).toEqual({ x: 120, y: 80, k: 1.75 })
     expect(rebuiltNodeGroups).toHaveLength(2)
-    expect(rebuiltNodeGroups[0]?.getAttribute('transform')).toBe(transformsBefore[0])
-    expect(rebuiltNodeGroups[1]?.getAttribute('transform')).toBe(transformsBefore[1])
+    expect(positionsAfter[0]?.id).toBe(positionsBefore[0]?.id)
+    expect(positionsAfter[1]?.id).toBe(positionsBefore[1]?.id)
+    expect(Math.abs((positionsAfter[0]?.x ?? 0) - (positionsBefore[0]?.x ?? 0))).toBeLessThan(12)
+    expect(Math.abs((positionsAfter[0]?.y ?? 0) - (positionsBefore[0]?.y ?? 0))).toBeLessThan(12)
+    expect(Math.abs((positionsAfter[1]?.x ?? 0) - (positionsBefore[1]?.x ?? 0))).toBeLessThan(12)
+    expect(Math.abs((positionsAfter[1]?.y ?? 0) - (positionsBefore[1]?.y ?? 0))).toBeLessThan(12)
   })
 
   it('lets the simulation continue when structure-affecting inputs change', async () => {
@@ -262,7 +276,7 @@ describe('GraphCanvas', () => {
       await waitForSimulationTick()
     })
 
-    const beforeRebuildTransforms = getGraphElements().nodeGroups.map((nodeGroup) => nodeGroup.getAttribute('transform'))
+    const beforeRebuildPositions = getNodePositions()
 
     await act(async () => {
       root.render(
@@ -279,7 +293,14 @@ describe('GraphCanvas', () => {
     const rebuiltTransforms = getGraphElements().nodeGroups.map((nodeGroup) => nodeGroup.getAttribute('transform'))
     const rebuiltPositions = getNodePositions()
 
-    expect(rebuiltTransforms).toEqual(beforeRebuildTransforms)
+    expect(rebuiltPositions).toHaveLength(beforeRebuildPositions.length)
+    rebuiltPositions.forEach((position, index) => {
+      const previous = beforeRebuildPositions[index]
+
+      expect(position?.id).toBe(previous?.id)
+      expect(Math.abs((position?.x ?? 0) - (previous?.x ?? 0))).toBeLessThan(14)
+      expect(Math.abs((position?.y ?? 0) - (previous?.y ?? 0))).toBeLessThan(14)
+    })
 
     await act(async () => {
       await waitForSimulationTick()

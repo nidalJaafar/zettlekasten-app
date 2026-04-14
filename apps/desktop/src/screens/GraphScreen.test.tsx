@@ -136,7 +136,7 @@ describe('GraphScreen', () => {
     expect(graphCanvasState.mountCount).toBe(1)
     expect(graphCanvasState.unmountCount).toBe(0)
     expect(graphCanvasState.lastProps?.focusNoteId).toBeUndefined()
-    expect(graphCanvasState.lastProps?.selectedNoteId).toBeNull()
+    expect(graphCanvasState.lastProps?.selectedNoteId).toBeUndefined()
 
     await act(async () => {
       clickButton(container, 'Select first')
@@ -205,7 +205,7 @@ describe('GraphScreen', () => {
     expect(container.textContent).not.toContain('First content')
     expect(graphCanvasState.mountCount).toBe(1)
     expect(graphCanvasState.unmountCount).toBe(0)
-    expect(graphCanvasState.lastProps?.selectedNoteId).toBeNull()
+    expect(graphCanvasState.lastProps?.selectedNoteId).toBeUndefined()
     expect(graphCanvasState.lastProps?.focusNoteId).toBeUndefined()
   })
 })

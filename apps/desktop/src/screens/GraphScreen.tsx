@@ -82,7 +82,7 @@ export default function GraphScreen({ db, workspaceTarget, onOpenNoteId }: Props
         links={visibleLinks}
         onNodeClick={(note) => setSelectedNoteId(note.id)}
         focusNoteId={focusedNoteId}
-        selectedNoteId={selectedNoteId}
+        selectedNoteId={selectedNoteId ?? undefined}
         mode="full"
       />
 
