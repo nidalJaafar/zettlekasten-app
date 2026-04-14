@@ -10,7 +10,7 @@ interface Props {
 
 const SOURCE_TYPES: SourceType[] = ['book', 'article', 'video', 'podcast', 'conversation', 'other']
 const ICONS: Record<SourceType, string> = {
-  book: '📚', article: '📄', video: '🎥', podcast: '🎙️', conversation: '💬', other: '📌',
+  book: '\u25C6', article: '\u25A0', video: '\u25B6', podcast: '\u25CF', conversation: '\u25CB', other: '\u25C7',
 }
 
 export default function SourcePicker({ db, selectedId, onSelect }: Props) {
