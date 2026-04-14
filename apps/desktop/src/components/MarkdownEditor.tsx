@@ -83,11 +83,13 @@ function wikilinkPlugin(onLinkClick: (text: string) => void) {
 export default function MarkdownEditor({ value, onChange, placeholder, minHeight = '120px', readOnly = false, onLinkClick, wikilinkOptions, onCreateWikilinkNote }: Props) {
   const [activeQuery, setActiveQuery] = useState<ActiveWikilinkQuery | null>(null)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
+  const [pickerPos, setPickerPos] = useState<{ left: number; top: number } | null>(null)
   const optionsRef = useRef(wikilinkOptions)
   optionsRef.current = wikilinkOptions
   const readOnlyRef = useRef(readOnly)
   readOnlyRef.current = readOnly
   const cursorPosRef = useRef(value.length)
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
 
   const cursorTracker = useMemo(() => EditorView.updateListener.of((update) => {
     if (update.selectionSet) {
@@ -101,6 +103,18 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
       setActiveQuery(query)
       if (update.docChanged) {
         setHighlightedIndex(0)
+      }
+      if (query) {
+        const coords = update.view.coordsAtPos(query.from)
+        if (coords && wrapperRef.current) {
+          const wrapperRect = wrapperRef.current.getBoundingClientRect()
+          setPickerPos({
+            left: coords.left - wrapperRect.left,
+            top: coords.bottom - wrapperRect.top,
+          })
+        }
+      } else {
+        setPickerPos(null)
       }
     }
   }), [])
@@ -142,7 +156,7 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
   const showPicker = activeQuery && (filteredOptions.length > 0 || (activeQuery.query.trim() !== '' && onCreateWikilinkNote))
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
       <CodeMirror
         value={value}
         onChange={onChange}
@@ -164,9 +178,10 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
           className="wikilink-picker"
           style={{
             position: 'absolute',
-            bottom: '100%',
-            left: 0,
-            right: 0,
+            left: pickerPos ? pickerPos.left : 0,
+            top: pickerPos ? pickerPos.top : 0,
+            minWidth: 200,
+            maxWidth: 'calc(100% - 8px)',
             maxHeight: 180,
             overflowY: 'auto',
             background: BG.raised,
