@@ -29,6 +29,12 @@ interface Props {
   mode?: 'context' | 'full'
 }
 
+const CONTEXT_GRAPH_LINK_DISTANCE = 96
+const FULL_GRAPH_LINK_DISTANCE = 170
+const CONTEXT_GRAPH_CHARGE = -220
+const FULL_GRAPH_CHARGE = -145
+const GRAPH_COLLISION_PADDING = 16
+
 function applySelectedNodeStyles(
   circles: d3.Selection<SVGCircleElement, GraphNode, SVGGElement, unknown>,
   selectedNoteId?: string,
@@ -114,14 +120,14 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
     svg.call(zoomBehavior)
     svg.call(zoomBehavior.transform, zoomTransformRef.current)
 
-    const linkDistance = mode === 'context' ? 80 : 140
-    const chargeStrength = mode === 'context' ? -200 : -120
+    const linkDistance = mode === 'context' ? CONTEXT_GRAPH_LINK_DISTANCE : FULL_GRAPH_LINK_DISTANCE
+    const chargeStrength = mode === 'context' ? CONTEXT_GRAPH_CHARGE : FULL_GRAPH_CHARGE
 
     const simulation = d3.forceSimulation<GraphNode>(nodes)
       .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id((d) => d.id).distance(linkDistance))
       .force('charge', d3.forceManyBody().strength(chargeStrength))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide<GraphNode>().radius((d) => radiusScale(d.linkCount) + 12))
+      .force('collision', d3.forceCollide<GraphNode>().radius((d) => radiusScale(d.linkCount) + GRAPH_COLLISION_PADDING))
       .alphaDecay(0.04)
       .velocityDecay(0.5)
 

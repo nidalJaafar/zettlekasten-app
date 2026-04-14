@@ -5,6 +5,60 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Note, NoteLink } from '@zettelkasten/core'
 import GraphCanvas from './GraphCanvas'
 
+const { forceConfigurationCapture, resetForceConfigurationCapture } = vi.hoisted(() => {
+  const capture = {
+    linkDistances: [] as number[],
+    chargeStrengths: [] as number[],
+    collisionRadiusFns: [] as Array<(node: { linkCount: number }) => number>,
+  }
+
+  return {
+    forceConfigurationCapture: capture,
+    resetForceConfigurationCapture() {
+      capture.linkDistances = []
+      capture.chargeStrengths = []
+      capture.collisionRadiusFns = []
+    },
+  }
+})
+
+vi.mock('d3', async () => {
+  const actual = await vi.importActual<typeof import('d3')>('d3')
+
+  return {
+    ...actual,
+    forceLink: ((...args: Parameters<typeof actual.forceLink>) => {
+      const force = actual.forceLink(...args)
+      const originalDistance = force.distance
+      force.distance = function (value) {
+        if (typeof value === 'number') forceConfigurationCapture.linkDistances.push(value)
+        return originalDistance.call(this, value)
+      }
+      return force
+    }) as typeof actual.forceLink,
+    forceManyBody: (() => {
+      const force = actual.forceManyBody()
+      const originalStrength = force.strength
+      force.strength = function (value) {
+        if (typeof value === 'number') forceConfigurationCapture.chargeStrengths.push(value)
+        return originalStrength.call(this, value)
+      }
+      return force
+    }) as typeof actual.forceManyBody,
+    forceCollide: (() => {
+      const force = actual.forceCollide()
+      const originalRadius = force.radius
+      force.radius = function (value) {
+        if (typeof value === 'function') {
+          forceConfigurationCapture.collisionRadiusFns.push(value as (node: { linkCount: number }) => number)
+        }
+        return originalRadius.call(this, value)
+      }
+      return force
+    }) as typeof actual.forceCollide,
+  }
+})
+
 async function flushEffects() {
   await Promise.resolve()
   await Promise.resolve()
@@ -53,6 +107,7 @@ describe('GraphCanvas', () => {
   const links: NoteLink[] = [{ from_note_id: 'note-1', to_note_id: 'note-2' } as NoteLink]
 
   beforeEach(() => {
+    resetForceConfigurationCapture()
     container = document.createElement('div')
     Object.defineProperty(container, 'clientWidth', { value: 800, configurable: true })
     Object.defineProperty(container, 'clientHeight', { value: 600, configurable: true })
@@ -244,6 +299,40 @@ describe('GraphCanvas', () => {
     expect(afterSecondTickTransforms).not.toEqual(afterFirstTickTransforms)
     expect(afterFirstTickPositions).not.toEqual(rebuiltPositions)
     expect(afterSecondTickPositions).not.toEqual(afterFirstTickPositions)
+  })
+
+  it('configures roomier forces in full mode than context mode', async () => {
+    await act(async () => {
+      root.render(
+        <GraphCanvas
+          notes={notes}
+          links={links}
+          onNodeClick={vi.fn()}
+          selectedNoteId="note-1"
+          mode="full"
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      root.render(
+        <GraphCanvas
+          notes={notes}
+          links={links}
+          onNodeClick={vi.fn()}
+          selectedNoteId="note-1"
+          mode="context"
+        />
+      )
+      await flushEffects()
+    })
+
+    expect(forceConfigurationCapture.linkDistances).toEqual([170, 96])
+    expect(forceConfigurationCapture.chargeStrengths).toEqual([-145, -220])
+    expect(forceConfigurationCapture.collisionRadiusFns).toHaveLength(2)
+    expect(forceConfigurationCapture.collisionRadiusFns[0]?.({ linkCount: 0 })).toBe(20)
+    expect(forceConfigurationCapture.collisionRadiusFns[1]?.({ linkCount: 0 })).toBe(20)
   })
 
   it('keeps click-to-inspect working after a selection update', async () => {
