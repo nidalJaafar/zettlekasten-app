@@ -13,6 +13,7 @@ const items: { id: Screen; label: string }[] = [
   { id: 'review', label: 'Review' },
   { id: 'library', label: 'Library' },
   { id: 'graph', label: 'Graph' },
+  { id: 'trash', label: 'Trash' },
 ]
 
 export default function Sidebar({ current, onNavigate, inboxCount }: Props) {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { createNote, getLinkedNoteIds, getNoteById, updateNote, type Database, type Note } from '@zettelkasten/core'
+import { createNote, getLinkedNoteIds, getNoteById, softDeleteNote, updateNote, type Database, type Note } from '@zettelkasten/core'
 import type { WorkspaceTarget } from '../../App'
 import { BG, BORDER } from '../../theme'
 import {
@@ -48,11 +48,21 @@ function createDraftFromNote(note: Note): WorkspaceDraft {
   }
 }
 
-export default function NoteWorkspace({ db, target, onOpenNoteId, onInboxCountChange }: Props) {
+async function findNoteIdByTitle(db: Database, title: string): Promise<string | null> {
+  const match = await db.queryOne<{ id: string }>(
+    `SELECT id FROM notes WHERE title = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 1`,
+    [title]
+  )
+
+  return match?.id ?? null
+}
+
+export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, onInboxCountChange }: Props) {
   const [loadedNote, setLoadedNote] = useState<Note | null>(null)
   const [draft, setDraft] = useState<WorkspaceDraft>(EMPTY_DRAFT)
   const [saveState, setSaveState] = useState<SaveState>('saved')
   const [error, setError] = useState<string | null>(null)
+  const [deletePending, setDeletePending] = useState(false)
   const inFlightSave = useRef<{
     noteId: string
     title: string
@@ -70,6 +80,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onInboxCountCh
 
     if (!target) {
       inFlightSave.current = null
+      setDeletePending(false)
       setLoadedNote(null)
       setDraft(EMPTY_DRAFT)
       setSaveState('saved')
@@ -79,6 +90,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onInboxCountCh
 
     if (target.mode === 'draft') {
       inFlightSave.current = null
+      setDeletePending(false)
       setLoadedNote(null)
       setDraft(EMPTY_DRAFT)
       setSaveState('dirty')
@@ -130,6 +142,13 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onInboxCountCh
     const sourceChanged = loadedNote.type !== 'permanent' && draft.sourceId !== loadedNote.source_id
     const activeSave = inFlightSave.current
 
+    if (deletePending) {
+      if (titleChanged || contentChanged || sourceChanged) {
+        setSaveState('dirty')
+      }
+      return
+    }
+
     if (!titleChanged && !contentChanged && !sourceChanged) {
       if (!activeSave) {
         setSaveState('saved')
@@ -152,6 +171,10 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onInboxCountCh
 
     const saveVersion = targetVersion.current
     const timeoutId = window.setTimeout(() => {
+      if (deletePending || targetVersion.current !== saveVersion) {
+        return
+      }
+
       inFlightSave.current = {
         noteId: loadedNote.id,
         title: draft.title,
@@ -192,7 +215,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onInboxCountCh
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [db, draft.content, draft.sourceId, draft.title, loadedNote])
+  }, [db, deletePending, draft.content, draft.sourceId, draft.title, loadedNote])
 
   async function handlePromoteToLiterature() {
     setError(null)
@@ -271,65 +294,113 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onInboxCountCh
     }
   }
 
+  async function handleLinkClick(linkText: string) {
+    setError(null)
+
+    const linkedNoteId = await findNoteIdByTitle(db, linkText)
+    if (!linkedNoteId) {
+      setError(`Linked note not found: ${linkText}`)
+      return
+    }
+
+    await onOpenNoteId(linkedNoteId)
+  }
+
+  async function handleDeleteNote() {
+    if (!loadedNote) return
+
+    const confirmed = window.confirm('Delete this note? You can no longer open it from the workspace.')
+    if (!confirmed) return
+
+    setError(null)
+    setDeletePending(true)
+    targetVersion.current += 1
+    inFlightSave.current = null
+
+    try {
+      await softDeleteNote(db, loadedNote.id)
+      await onInboxCountChange()
+      onOpenTarget(null)
+    } catch (err) {
+      setDeletePending(false)
+      setError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
   return (
     <div
       className="workspace-pane"
       style={{
-        display: 'grid',
-        gridTemplateColumns: '280px minmax(0, 1fr) 320px',
+        display: 'flex',
         height: '100%',
         background: BG.base,
         minHeight: 0,
+        overflow: 'hidden',
       }}
     >
-      <WorkspaceRail db={db} activeNoteId={loadedNote?.id ?? null} onOpenNoteId={onOpenNoteId} />
-      <DocumentPane
-        title={draft.title}
-        content={draft.content}
-        saveState={saveState}
-        readOnly={!isEditable}
-        placeholderTitle={isDraftTarget ? 'Untitled note' : 'Untitled'}
-        placeholderBody="Write here..."
-        onTitleChange={(title) => {
-          setDraft((current) => ({ ...current, title }))
-        }}
-        onContentChange={(content) => {
-          setDraft((current) => ({ ...current, content }))
-        }}
-      />
+      <div style={{ width: 240, flexShrink: 0, borderRight: `1px solid ${BORDER.faint}`, overflow: 'auto' }}>
+        <WorkspaceRail db={db} activeNoteId={loadedNote?.id ?? null} onOpenNoteId={onOpenNoteId} />
+      </div>
+
+      <div style={{ flex: '1 1 0%', minWidth: 0, minHeight: 0, overflow: 'auto' }}>
+        <DocumentPane
+          title={draft.title}
+          content={draft.content}
+          saveState={saveState}
+          readOnly={!isEditable}
+          placeholderTitle={isDraftTarget ? 'Untitled note' : 'Untitled'}
+          placeholderBody="Write here..."
+          onTitleChange={(title) => {
+            setDraft((current) => ({ ...current, title }))
+          }}
+          onContentChange={(content) => {
+            setDraft((current) => ({ ...current, content }))
+          }}
+          onLinkClick={(linkText) => {
+            void handleLinkClick(linkText)
+          }}
+        />
+      </div>
+
       <div style={{
-        display: 'grid',
-        gridTemplateRows: 'minmax(0, 1fr) auto',
+        width: 280,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
         minHeight: 0,
+        borderLeft: `1px solid ${BORDER.faint}`,
         overflow: 'hidden',
       }}>
-        <NoteContextPane
-          db={db}
-          note={loadedNote}
-          draftType={target?.mode === 'draft' ? target.noteType : null}
-          sourceId={draft.sourceId}
-          ownWords={draft.ownWords}
-          linkedIds={draft.linkedIds}
-          error={error}
-          onSourceIdChange={(sourceId) => {
-            setDraft((current) => ({ ...current, sourceId }))
-          }}
-          onOwnWordsChange={(ownWords) => {
-            setDraft((current) => ({ ...current, ownWords }))
-          }}
-          onToggleLink={(noteId) => {
-            setDraft((current) => ({
-              ...current,
-              linkedIds: current.linkedIds.includes(noteId)
-                ? current.linkedIds.filter((id) => id !== noteId)
-                : [...current.linkedIds, noteId],
-            }))
-          }}
-          onPromoteToLiterature={handlePromoteToLiterature}
-          onSaveAsPermanent={handleSaveAsPermanent}
-        />
+        <div style={{ flex: '1 1 0%', overflow: 'auto', minHeight: 0 }}>
+          <NoteContextPane
+            db={db}
+            note={loadedNote}
+            draftType={target?.mode === 'draft' ? target.noteType : null}
+            sourceId={draft.sourceId}
+            ownWords={draft.ownWords}
+            linkedIds={draft.linkedIds}
+            error={error}
+            onSourceIdChange={(sourceId) => {
+              setDraft((current) => ({ ...current, sourceId }))
+            }}
+            onOwnWordsChange={(ownWords) => {
+              setDraft((current) => ({ ...current, ownWords }))
+            }}
+            onToggleLink={(noteId) => {
+              setDraft((current) => ({
+                ...current,
+                linkedIds: current.linkedIds.includes(noteId)
+                  ? current.linkedIds.filter((id) => id !== noteId)
+                  : [...current.linkedIds, noteId],
+              }))
+            }}
+            onPromoteToLiterature={handlePromoteToLiterature}
+            onSaveAsPermanent={handleSaveAsPermanent}
+            onDeleteNote={loadedNote ? handleDeleteNote : undefined}
+          />
+        </div>
         {loadedNote && (
-          <div style={{ borderTop: `1px solid ${BORDER.faint}`, padding: 12 }}>
+          <div style={{ borderTop: `1px solid ${BORDER.faint}`, padding: 12, flexShrink: 0 }}>
             <ContextGraph db={db} activeNote={loadedNote} onOpenNoteId={(id) => { void onOpenNoteId(id) }} />
           </div>
         )}

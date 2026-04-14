@@ -32,9 +32,9 @@ export const ACCENT = {
 } as const
 
 export const FONT = {
-  display: "'Literata', Georgia, serif",
-  ui: "'Spline Sans', 'Segoe UI', sans-serif",
-  mono: "'IBM Plex Mono', 'SFMono-Regular', monospace",
+  display: "'Poppins', 'Inter', 'Segoe UI', sans-serif",
+  ui: "'Poppins', 'Inter', 'Segoe UI', sans-serif",
+  mono: "'Fira Code', 'IBM Plex Mono', 'SFMono-Regular', monospace",
 } as const
 
 export function typeColor(type: string): string {

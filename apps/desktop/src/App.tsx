@@ -7,9 +7,10 @@ import InboxScreen from './screens/InboxScreen'
 import ReviewScreen from './screens/ReviewScreen'
 import GraphScreen from './screens/GraphScreen'
 import LibraryScreen from './screens/LibraryScreen'
+import TrashScreen from './screens/TrashScreen'
 import NoteWorkspace from './components/workspace/NoteWorkspace'
 
-export type Screen = 'inbox' | 'workspace' | 'review' | 'library' | 'graph'
+export type Screen = 'inbox' | 'workspace' | 'review' | 'library' | 'graph' | 'trash'
 
 export type WorkspaceTarget =
   | { mode: 'note'; noteId: string }
@@ -122,6 +123,7 @@ export default function App() {
         )}
         {screen === 'library' && <LibraryScreen db={db} />}
         {screen === 'graph' && <GraphScreen db={db} workspaceTarget={workspaceTarget} onOpenNoteId={openWorkspaceById} />}
+        {screen === 'trash' && <TrashScreen db={db} onInboxCountChange={refreshInboxCount} />}
       </main>
     </div>
   )

@@ -3,13 +3,14 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Database, Note } from '@zettelkasten/core'
 import NoteWorkspace from './NoteWorkspace'
-import { createNote, getLinkedNoteIds, getNoteById, updateNote } from '@zettelkasten/core'
+import { createNote, getLinkedNoteIds, getNoteById, softDeleteNote, updateNote } from '@zettelkasten/core'
 import { promoteFleetingToLiterature, saveLiteratureAsPermanent, syncNoteLinks } from '../../lib/note-workflow'
 
 vi.mock('@zettelkasten/core', () => ({
   createNote: vi.fn(),
   getLinkedNoteIds: vi.fn(),
   getNoteById: vi.fn(),
+  softDeleteNote: vi.fn(),
   updateNote: vi.fn(),
 }))
 
@@ -35,6 +36,7 @@ vi.mock('./DocumentPane', () => ({
     readOnly,
     onTitleChange,
     onContentChange,
+    onLinkClick,
   }: {
     title: string
     content: string
@@ -42,6 +44,7 @@ vi.mock('./DocumentPane', () => ({
     readOnly?: boolean
     onTitleChange: (value: string) => void
     onContentChange: (value: string) => void
+    onLinkClick?: (value: string) => void
   }) => (
     <div>
       <div>Pane title: {title}</div>
@@ -50,6 +53,7 @@ vi.mock('./DocumentPane', () => ({
       <div>Pane mode: {readOnly ? 'readonly' : 'editable'}</div>
       {!readOnly && <button onClick={() => onTitleChange('Updated title')}>Change title</button>}
       {!readOnly && <button onClick={() => onContentChange('Updated body')}>Change body</button>}
+      {onLinkClick && <button onClick={() => onLinkClick('Linked note')}>Open linked note</button>}
     </div>
   ),
 }))
@@ -60,6 +64,7 @@ vi.mock('./NoteContextPane', () => ({
     draftType,
     sourceId,
     linkedIds,
+    onDeleteNote,
     onSourceIdChange,
     onToggleLink,
     onPromoteToLiterature,
@@ -69,6 +74,7 @@ vi.mock('./NoteContextPane', () => ({
     draftType: 'literature' | 'permanent' | null
     sourceId: string | null
     linkedIds: string[]
+    onDeleteNote?: () => void
     onSourceIdChange: (value: string | null) => void
     onToggleLink: (value: string) => void
     onPromoteToLiterature: () => void
@@ -84,6 +90,7 @@ vi.mock('./NoteContextPane', () => ({
       <button onClick={() => onToggleLink('link-picked')}>Toggle picked link</button>
       <button onClick={onPromoteToLiterature}>Promote note</button>
       <button onClick={onSaveAsPermanent}>Save note</button>
+      {onDeleteNote && <button onClick={onDeleteNote}>Delete note</button>}
     </div>
   ),
 }))
@@ -111,7 +118,12 @@ function createFakeDb(): Database {
   return {
     execute: vi.fn(async () => {}),
     query,
-    queryOne: vi.fn(async () => null),
+    queryOne: vi.fn(async (sql: string, params?: unknown[]) => {
+      if (sql.includes('WHERE title = ?') && params?.[0] === 'Linked note') {
+        return { id: 'linked-note-id' }
+      }
+      return null
+    }),
   }
 }
 
@@ -163,6 +175,7 @@ describe('NoteWorkspace', () => {
       processed_at: null,
     } as Note)
     vi.mocked(getLinkedNoteIds).mockResolvedValue([])
+    vi.mocked(softDeleteNote).mockResolvedValue(undefined)
     vi.mocked(updateNote).mockResolvedValue(undefined)
     vi.mocked(promoteFleetingToLiterature).mockResolvedValue(undefined)
     vi.mocked(saveLiteratureAsPermanent).mockResolvedValue({
@@ -186,6 +199,7 @@ describe('NoteWorkspace', () => {
       await flushEffects()
     })
     container.remove()
+    vi.unstubAllGlobals()
     vi.useRealTimers()
     vi.clearAllMocks()
   })
@@ -236,6 +250,44 @@ describe('NoteWorkspace', () => {
       source_id: 'source-1',
     })
     expect(container.textContent).toContain('Pane save state: saved')
+  })
+
+  it('opens a linked note from the document pane by matching its title', async () => {
+    const db = createFakeDb()
+    const onOpenNoteId = vi.fn(async () => {})
+
+    vi.mocked(getNoteById).mockResolvedValueOnce({
+      id: 'note-1',
+      type: 'literature',
+      title: 'Loaded note',
+      content: 'Body with [[Linked note]]',
+      created_at: 1,
+      updated_at: 2,
+      source_id: 'source-1',
+      own_words_confirmed: 1,
+      deleted_at: null,
+      processed_at: null,
+    } as Note)
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={onOpenNoteId}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Open linked note')
+      await flushEffects()
+    })
+
+    expect(onOpenNoteId).toHaveBeenCalledWith('linked-note-id')
   })
 
   it('stays in saving state without scheduling duplicate saves while a save is in flight', async () => {
@@ -309,6 +361,138 @@ describe('NoteWorkspace', () => {
     expect(container.textContent).toContain('Pane save state: dirty')
     expect(container.textContent).toContain('Pane mode: editable')
     expect(updateNote).not.toHaveBeenCalled()
+    expect(container.textContent).not.toContain('Delete note')
+  })
+
+  it('soft-deletes a saved note after confirmation, refreshes counts, and clears the active target', async () => {
+    const db = createFakeDb()
+    const onInboxCountChange = vi.fn(async () => {})
+    const onOpenTarget = vi.fn()
+    const confirmSpy = vi.fn(() => true)
+    vi.stubGlobal('confirm', confirmSpy)
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={onOpenTarget}
+          onInboxCountChange={onInboxCountChange}
+        />
+      )
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Delete note')
+
+    await act(async () => {
+      clickButton(container, 'Delete note')
+      await flushEffects()
+    })
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(softDeleteNote).toHaveBeenCalledWith(db, 'note-1')
+    expect(onInboxCountChange).toHaveBeenCalled()
+    expect(onOpenTarget).toHaveBeenCalledWith(null)
+  })
+
+  it('does not autosave after a dirty note is deleted before the debounce fires', async () => {
+    const db = createFakeDb()
+    const confirmSpy = vi.fn(() => true)
+    vi.stubGlobal('confirm', confirmSpy)
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Change title')
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Pane save state: dirty')
+
+    await act(async () => {
+      clickButton(container, 'Delete note')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(450)
+      await flushEffects()
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(450)
+      await flushEffects()
+    })
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(softDeleteNote).toHaveBeenCalledWith(db, 'note-1')
+    expect(updateNote).not.toHaveBeenCalled()
+  })
+
+  it('resumes autosave after delete fails for a dirty note', async () => {
+    const db = createFakeDb()
+    const confirmSpy = vi.fn(() => true)
+    vi.stubGlobal('confirm', confirmSpy)
+    let rejectDelete: ((error: Error) => void) | null = null
+    vi.mocked(softDeleteNote).mockImplementationOnce(() => new Promise<void>((_, reject) => {
+      rejectDelete = reject
+    }))
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={vi.fn(async () => {})}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Change title')
+      await flushEffects()
+    })
+
+    expect(container.textContent).toContain('Pane save state: dirty')
+
+    await act(async () => {
+      clickButton(container, 'Delete note')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      rejectDelete?.(new Error('Delete failed'))
+      await flushEffects()
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(450)
+      await flushEffects()
+    })
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(softDeleteNote).toHaveBeenCalledWith(db, 'note-1')
+    expect(updateNote).toHaveBeenCalledWith(db, 'note-1', {
+      title: 'Updated title',
+      content: 'Loaded body',
+      source_id: 'source-1',
+    })
   })
 
   it('ignores stale save completion after switching to another target', async () => {

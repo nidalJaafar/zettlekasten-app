@@ -16,6 +16,7 @@ interface Props {
   onToggleLink: (noteId: string) => void
   onPromoteToLiterature: () => void
   onSaveAsPermanent: () => void
+  onDeleteNote?: () => void
 }
 
 export default function NoteContextPane({
@@ -31,6 +32,7 @@ export default function NoteContextPane({
   onToggleLink,
   onPromoteToLiterature,
   onSaveAsPermanent,
+  onDeleteNote,
 }: Props) {
   const currentType = note?.type ?? draftType
   const isLiteratureFlow = currentType === 'literature'
@@ -145,6 +147,28 @@ export default function NoteContextPane({
         >
           {actionLabel}
         </button>
+
+        {onDeleteNote && (
+          <button
+            onClick={onDeleteNote}
+            style={{
+              width: '100%',
+              padding: '13px 16px',
+              border: `1px solid ${ACCENT.danger}`,
+              borderRadius: 12,
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: BG.raised,
+              color: ACCENT.danger,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              fontFamily: FONT.ui,
+            }}
+          >
+            Delete Note
+          </button>
+        )}
       </div>
     </aside>
   )

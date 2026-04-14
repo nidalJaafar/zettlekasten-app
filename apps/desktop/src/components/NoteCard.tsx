@@ -24,23 +24,23 @@ export default function NoteCard({ note, onOpen, onProcess }: Props) {
       style={{
         background: BG.raised,
         border: `1px solid ${BORDER.faint}`,
-        borderRadius: 10,
-        padding: '14px 16px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 14,
+        borderRadius: 8,
+        padding: '12px 16px',
       }}
     >
-      <div style={{ width: 6, paddingTop: 8, flexShrink: 0 }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT.fleeting, opacity: 0.8 }} />
-      </div>
-
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         data-testid="note-open"
         onClick={() => onOpen(note)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onOpen(note)
+          }
+        }}
         style={{
-          flex: 1,
-          minWidth: 0,
+          width: '100%',
           background: 'transparent',
           border: 'none',
           cursor: 'pointer',
@@ -50,61 +50,54 @@ export default function NoteCard({ note, onOpen, onProcess }: Props) {
           font: 'inherit',
         }}
       >
-        <div
-          style={{
-            fontFamily: FONT.display,
-            fontSize: 18,
-            fontWeight: 500,
-            color: TEXT.primary,
-            marginBottom: 4,
-            lineHeight: 1.3,
-            letterSpacing: '0.002em',
-          }}
-        >
-          {note.title}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ fontFamily: FONT.ui, fontSize: 13, fontWeight: 500, color: TEXT.primary, lineHeight: 1.4 }}>
+            {note.title}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            {onProcess && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onProcess(note) }}
+                className="process-btn"
+                style={{
+                  background: 'transparent',
+                  color: TEXT.muted,
+                  border: 'none',
+                  padding: '2px 0',
+                  fontSize: 10,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  fontFamily: FONT.ui,
+                }}
+              >
+                Process
+              </button>
+            )}
+            <span style={{ fontSize: 10, color: TEXT.faint, fontFamily: FONT.ui }}>
+              {timeAgo(note.created_at)}
+            </span>
+          </div>
         </div>
         {note.content && (
           <div
             style={{
               fontSize: 12,
-              color: TEXT.secondary,
-              lineHeight: 1.7,
-              marginBottom: 8,
+              color: TEXT.muted,
+              lineHeight: 1.5,
+              marginTop: 6,
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
+              fontFamily: FONT.ui,
             }}
           >
             {note.content}
           </div>
         )}
-        <div style={{ fontSize: 10, color: TEXT.faint, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-          {timeAgo(note.created_at)}
-        </div>
-      </button>
-
-      {onProcess && (
-        <button
-          onClick={() => onProcess(note)}
-          className="process-btn"
-          style={{
-            background: 'transparent',
-            color: TEXT.secondary,
-            border: 'none',
-            padding: '5px 0',
-            fontSize: 11,
-            fontWeight: 500,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Process
-        </button>
-      )}
+      </div>
     </div>
   )
 }

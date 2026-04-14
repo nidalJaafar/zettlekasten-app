@@ -56,7 +56,7 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
 
     const radiusScale = d3.scaleSqrt()
       .domain([0, d3.max(nodes, (n) => n.linkCount) ?? 1])
-      .range([6, 20])
+      .range([4, 10])
 
     const g = svg.append('g')
 
@@ -68,14 +68,14 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
         .on('zoom', (event) => g.attr('transform', event.transform))
     )
 
-    const linkDistance = mode === 'context' ? 50 : 80
-    const chargeStrength = mode === 'context' ? -150 : -80
+    const linkDistance = mode === 'context' ? 80 : 140
+    const chargeStrength = mode === 'context' ? -200 : -120
 
     const simulation = d3.forceSimulation<GraphNode>(nodes)
       .force('link', d3.forceLink<GraphNode, GraphEdge>(edges).id((d) => d.id).distance(linkDistance))
       .force('charge', d3.forceManyBody().strength(chargeStrength))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide<GraphNode>().radius((d) => radiusScale(d.linkCount) + 4))
+      .force('collision', d3.forceCollide<GraphNode>().radius((d) => radiusScale(d.linkCount) + 12))
       .alphaDecay(0.04)
       .velocityDecay(0.5)
 
@@ -103,7 +103,7 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
           .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y })
           .on('end', (event, d) => {
             if (!event.active) simulation.alphaTarget(0)
-            d.fx = null; d.fy = null
+            if (d.id !== focusNoteId) { d.fx = null; d.fy = null }
           })
       )
 
@@ -115,10 +115,10 @@ export default function GraphCanvas({ notes, links, onNodeClick, focusNoteId, se
       .attr('stroke-width', (d) => d.id === selectedNoteId ? 1.4 : 1)
 
     node.append('text')
-      .attr('dy', (d) => radiusScale(d.linkCount) + 15)
+      .attr('dy', (d) => radiusScale(d.linkCount) + 12)
       .attr('text-anchor', 'middle')
-      .attr('font-size', 10)
-      .attr('font-family', 'Spline Sans, sans-serif')
+      .attr('font-size', 9)
+      .attr('font-family', 'Poppins, sans-serif')
       .attr('letter-spacing', '0.04em')
       .attr('fill', '#7f7a70')
       .text((d) => d.title.length > 24 ? d.title.slice(0, 24) + '…' : d.title)

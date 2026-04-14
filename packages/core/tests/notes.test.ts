@@ -5,6 +5,8 @@ import {
   getNotesByType,
   updateNote,
   softDeleteNote,
+  restoreNote,
+  permanentlyDeleteNote,
   countNotesByType,
 } from '../src/notes'
 import { createMigratedDb } from './helpers/db'
@@ -185,5 +187,58 @@ describe('countNotesByType', () => {
     await softDeleteNote(db, deleted.id)
     const count = await countNotesByType(db, 'permanent')
     expect(count).toBe(2)
+  })
+})
+
+describe('restoreNote', () => {
+  it('clears deleted_at and refreshes updated_at', async () => {
+    const note = await createNote(db, { type: 'fleeting', title: 'Recover me' })
+    const updatedBefore = note.updated_at
+    const deletedBefore = note.updated_at + 10
+
+    await db.execute(
+      'UPDATE notes SET deleted_at = ?, updated_at = ? WHERE id = ?',
+      [deletedBefore, note.updated_at, note.id]
+    )
+
+    await restoreNote(db, note.id)
+
+    const restored = await db.queryOne<{ deleted_at: number | null; updated_at: number }>(
+      'SELECT deleted_at, updated_at FROM notes WHERE id = ?',
+      [note.id]
+    )
+
+    expect(restored?.deleted_at).toBeNull()
+    expect(restored?.updated_at).toBeGreaterThanOrEqual(updatedBefore)
+
+    const visible = await getNoteById(db, note.id)
+    expect(visible?.id).toBe(note.id)
+  })
+})
+
+describe('permanentlyDeleteNote', () => {
+  it('removes note links for the note before deleting the row', async () => {
+    const first = await createNote(db, { type: 'permanent', title: 'First' })
+    const second = await createNote(db, { type: 'permanent', title: 'Second' })
+
+    await db.execute(
+      'INSERT INTO note_links (from_note_id, to_note_id, created_at) VALUES (?, ?, ?)',
+      [first.id, second.id, Date.now()]
+    )
+    await db.execute(
+      'INSERT INTO note_links (from_note_id, to_note_id, created_at) VALUES (?, ?, ?)',
+      [second.id, first.id, Date.now()]
+    )
+
+    await permanentlyDeleteNote(db, first.id)
+
+    const deleted = await db.queryOne<{ id: string }>('SELECT id FROM notes WHERE id = ?', [first.id])
+    const remainingLinks = await db.query<{ from_note_id: string; to_note_id: string }>(
+      'SELECT from_note_id, to_note_id FROM note_links WHERE from_note_id = ? OR to_note_id = ?',
+      [first.id, first.id]
+    )
+
+    expect(deleted).toBeNull()
+    expect(remainingLinks).toEqual([])
   })
 })

@@ -83,6 +83,25 @@ export async function softDeleteNote(db: Database, id: string): Promise<void> {
   )
 }
 
+export async function restoreNote(db: Database, id: string): Promise<void> {
+  const now = Date.now()
+  await db.execute(
+    `UPDATE notes SET deleted_at = NULL, updated_at = ? WHERE id = ?`,
+    [now, id]
+  )
+}
+
+export async function permanentlyDeleteNote(db: Database, id: string): Promise<void> {
+  await db.execute(
+    `DELETE FROM note_links WHERE from_note_id = ? OR to_note_id = ?`,
+    [id, id]
+  )
+  await db.execute(
+    `DELETE FROM notes WHERE id = ?`,
+    [id]
+  )
+}
+
 export async function countNotesByType(db: Database, type: NoteType): Promise<number> {
   const row = await db.queryOne<{ count: number }>(
     `SELECT COUNT(*) as count FROM notes WHERE type = ? AND deleted_at IS NULL`,

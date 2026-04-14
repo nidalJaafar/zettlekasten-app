@@ -89,8 +89,9 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
               }}
             >
               <span style={{
-                fontFamily: FONT.display,
+                fontFamily: FONT.ui,
                 fontSize: 15,
+                fontWeight: 500,
                 color: TEXT.primary,
                 flex: 1,
                 lineHeight: 1.35,
