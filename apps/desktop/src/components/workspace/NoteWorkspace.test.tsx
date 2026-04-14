@@ -41,7 +41,12 @@ vi.mock('./WorkspaceRail', () => ({
 }))
 
 vi.mock('./ContextGraph', () => ({
-  default: () => <div>ContextGraph</div>,
+  default: ({ onOpenNoteId }: { onOpenNoteId: (noteId: string) => void }) => (
+    <div>
+      <div>ContextGraph</div>
+      <button onClick={() => onOpenNoteId('context-note-2')}>Open context note</button>
+    </div>
+  ),
 }))
 
 vi.mock('./DocumentPane', () => ({
@@ -630,6 +635,40 @@ describe('NoteWorkspace', () => {
 
     expect(onOpenNoteId).toHaveBeenCalledWith('note-2')
     expect(container.querySelector('[data-testid="workspace-rail-pane"]')).toBeNull()
+  })
+
+  it('closes the compact context drawer after opening a note from context', async () => {
+    const db = createFakeDb()
+    const onOpenNoteId = vi.fn(async () => {})
+    setViewportWidth(900)
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={onOpenNoteId}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Context')
+      await flushEffects()
+    })
+
+    expect(container.querySelector('[data-testid="workspace-context-pane"]')).not.toBeNull()
+
+    await act(async () => {
+      clickButton(container, 'Open context note')
+      await flushEffects()
+    })
+
+    expect(onOpenNoteId).toHaveBeenCalledWith('context-note-2')
+    expect(container.querySelector('[data-testid="workspace-context-pane"]')).toBeNull()
   })
 
   it('closes the compact drawer when the backdrop is clicked', async () => {

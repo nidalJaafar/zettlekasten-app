@@ -102,6 +102,12 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
   }, [isCompact])
 
   useEffect(() => {
+    if (isCompact) {
+      setOpenCompactPanel(null)
+    }
+  }, [isCompact, target])
+
+  useEffect(() => {
     let cancelled = false
     const version = targetVersion.current + 1
     targetVersion.current = version
@@ -366,6 +372,14 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
     }
   }
 
+  async function handleOpenNote(noteId: string) {
+    await onOpenNoteId(noteId)
+
+    if (isCompact) {
+      setOpenCompactPanel(null)
+    }
+  }
+
   const railContent = (
     <div
       data-testid="workspace-rail-pane"
@@ -415,7 +429,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
       </div>
       {loadedNote && (
         <div style={{ borderTop: `1px solid ${BORDER.faint}`, padding: 12, flexShrink: 0 }}>
-          <ContextGraph db={db} activeNote={loadedNote} onOpenNoteId={(id) => { void onOpenNoteId(id) }} />
+          <ContextGraph db={db} activeNote={loadedNote} onOpenNoteId={(id) => { void handleOpenNote(id) }} />
         </div>
       )}
     </div>

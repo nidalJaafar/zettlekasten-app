@@ -77,6 +77,10 @@ export default function DocumentPane({
     onLinkClick(linkText)
   }
 
+  function handleTitleChange(value: string) {
+    onTitleChange(value.replace(/\r?\n/g, ' '))
+  }
+
   return (
     <div style={{
       height: '100%',
@@ -131,7 +135,7 @@ export default function DocumentPane({
           <textarea
             ref={titleRef}
             value={title}
-            onChange={(event) => onTitleChange(event.currentTarget.value)}
+            onChange={(event) => handleTitleChange(event.currentTarget.value)}
             readOnly={readOnly}
             placeholder={placeholderTitle}
             rows={1}

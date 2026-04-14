@@ -251,6 +251,43 @@ describe('DocumentPane', () => {
     }
   })
 
+  it('normalizes title line breaks into spaces before persisting edits', async () => {
+    const onTitleChange = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <DocumentPane
+          title="Title"
+          content="Body"
+          saveState="saved"
+          placeholderTitle="Title"
+          placeholderBody="Body"
+          onTitleChange={onTitleChange}
+          onContentChange={vi.fn()}
+        />
+      )
+    })
+
+    const titleInput = container.querySelector('textarea')
+    expect(titleInput).toBeTruthy()
+
+    await act(async () => {
+      if (!titleInput) {
+        throw new Error('expected title textarea')
+      }
+
+      const setValue = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value'
+      )?.set
+
+      setValue?.call(titleInput, 'Line one\nLine two\r\nLine three')
+      titleInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    expect(onTitleChange).toHaveBeenCalledWith('Line one Line two Line three')
+  })
+
   it('renders wikilinks as ctrl-clickable preview links', async () => {
     const onLinkClick = vi.fn()
 
