@@ -9,9 +9,6 @@ interface Props {
 }
 
 const SOURCE_TYPES: SourceType[] = ['book', 'article', 'video', 'podcast', 'conversation', 'other']
-const ICONS: Record<SourceType, string> = {
-  book: '\u25C6', article: '\u25A0', video: '\u25B6', podcast: '\u25CF', conversation: '\u25CB', other: '\u25C7',
-}
 
 export default function SourcePicker({ db, selectedId, onSelect }: Props) {
   const [sources, setSources] = useState<Source[]>([])
@@ -29,6 +26,19 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
   const filtered = sources.filter((s) =>
     s.label.toLowerCase().includes(query.toLowerCase())
   )
+
+  async function handleDelete(sourceId: string) {
+    const ref = await db.queryOne<{ id: string }>(
+      'SELECT id FROM notes WHERE source_id = ? AND deleted_at IS NULL LIMIT 1',
+      [sourceId]
+    )
+    if (ref) {
+      window.alert('Cannot delete: this source is used by at least one note.')
+      return
+    }
+    await db.execute('DELETE FROM sources WHERE id = ?', [sourceId])
+    setSources((prev) => prev.filter((s) => s.id !== sourceId))
+  }
 
   async function handleCreate() {
     if (!newLabel.trim()) return
@@ -69,22 +79,48 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
             {filtered.map((s) => {
               const selected = s.id === selectedId
               return (
-                <button
+                <div
                   key={s.id}
-                  onClick={() => onSelect(s.id)}
-                  className="source-row"
                   style={{
                     ...rowStyle,
                     background: selected ? ACCENT.inkSoft : BG.raised,
                     borderColor: selected ? ACCENT.ink : BORDER.faint,
                   }}
                 >
-                  <span style={{ fontSize: 12 }}>{ICONS[s.type]}</span>
-                  <span style={{ flex: 1, textAlign: 'left', fontSize: 12, color: selected ? TEXT.primary : TEXT.secondary }}>
+                  <button
+                    onClick={() => onSelect(s.id)}
+                    style={{
+                      flex: 1,
+                      textAlign: 'left',
+                      fontSize: 12,
+                      color: selected ? TEXT.primary : TEXT.secondary,
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
                     {s.label}
-                  </span>
+                  </button>
                   {selected && <span style={{ fontSize: 11, color: ACCENT.ink }}>✓</span>}
-                </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void handleDelete(s.id)
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: TEXT.muted,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      padding: '0 4px',
+                    }}
+                    title="Delete source"
+                  >
+                    ✕
+                  </button>
+                </div>
               )
             })}
           </div>
@@ -118,7 +154,7 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
             style={{ ...inputStyle, cursor: 'pointer' }}
           >
             {SOURCE_TYPES.map((t) => (
-              <option key={t} value={t}>{ICONS[t]} {t}</option>
+              <option key={t} value={t}>{t}</option>
             ))}
           </select>
           <input
