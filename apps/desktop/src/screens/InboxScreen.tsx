@@ -53,7 +53,9 @@ export default function InboxScreen({ db, onCountChange }: Props) {
   }
 
   function handleTitleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+    const isCompositionConfirmation = e.nativeEvent.isComposing || e.key === 'Process' || e.nativeEvent.keyCode === 229
+
+    if (e.key !== 'Enter' || isCompositionConfirmation) return
 
     e.preventDefault()
     bodyInputRef.current?.focus()

@@ -103,6 +103,18 @@ describe('InboxScreen', () => {
     element.dispatchEvent(new Event('input', { bubbles: true }))
   }
 
+  function dispatchKeyDown(
+    element: HTMLInputElement | HTMLTextAreaElement,
+    init: KeyboardEventInit,
+    overrides: Record<string, unknown> = {}
+  ) {
+    const event = new KeyboardEvent('keydown', { bubbles: true, ...init })
+    for (const [key, value] of Object.entries(overrides)) {
+      Object.defineProperty(event, key, { value })
+    }
+    element.dispatchEvent(event)
+  }
+
   it('dispatches zettel:open-note when a note card title/content area is clicked', async () => {
     const listener = vi.fn()
     window.addEventListener('zettel:open-note', listener)
@@ -215,14 +227,45 @@ describe('InboxScreen', () => {
     await act(async () => {
       titleInput.focus()
       setInputValue(titleInput, 'Composing title')
-      const composingEnter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
-      Object.defineProperty(composingEnter, 'isComposing', { value: true })
-      titleInput.dispatchEvent(composingEnter)
+      dispatchKeyDown(titleInput, { key: 'Enter' }, { isComposing: true })
       await flushEffects()
     })
 
     expect(getBodyInput()).toBeTruthy()
     expect(document.activeElement).toBe(titleInput)
+  })
+
+  it('does not move from title to body on IME confirmation events reported with keyCode 229', async () => {
+    await renderScreen()
+
+    const titleInput = getTitleInput()
+
+    await act(async () => {
+      titleInput.focus()
+      setInputValue(titleInput, 'IME keycode title')
+      dispatchKeyDown(titleInput, { key: 'Enter' }, { keyCode: 229 })
+      await flushEffects()
+    })
+
+    expect(getBodyInput()).toBeTruthy()
+    expect(document.activeElement).toBe(titleInput)
+  })
+
+  it('moves focus from title to body on a plain Enter keydown', async () => {
+    await renderScreen()
+
+    const titleInput = getTitleInput()
+
+    await act(async () => {
+      titleInput.focus()
+      setInputValue(titleInput, 'Plain enter title')
+      dispatchKeyDown(titleInput, { key: 'Enter' })
+      await flushEffects()
+    })
+
+    const bodyInput = getBodyInput()
+    expect(bodyInput).toBeTruthy()
+    expect(document.activeElement).toBe(bodyInput)
   })
 
   it('captures from the body field with ctrl+enter', async () => {
