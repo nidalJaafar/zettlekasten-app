@@ -131,6 +131,48 @@ async function hasAnotherActiveNoteWithTitle(db: Database, noteId: string, title
   return match !== null
 }
 
+const WIKILINK_EXTRACT_RE = /\[\[([^\]\|]+)(?:\|[^\]]*)?\]\]/g
+
+function extractWikilinkTitles(content: string): string[] {
+  const titles: string[] = []
+  let match: RegExpExecArray | null
+  WIKILINK_EXTRACT_RE.lastIndex = 0
+  while ((match = WIKILINK_EXTRACT_RE.exec(content)) !== null) {
+    titles.push(match[1].trim())
+  }
+  return titles
+}
+
+export async function syncWikilinksToLinks(db: Database, noteId: string, content: string): Promise<void> {
+  const titles = extractWikilinkTitles(content)
+  const resolvedIds = new Set<string>()
+
+  for (const title of titles) {
+    const match = await db.queryOne<{ id: string }>(
+      'SELECT id FROM notes WHERE title = ? AND deleted_at IS NULL AND id != ? LIMIT 1',
+      [title, noteId]
+    )
+    if (match) {
+      resolvedIds.add(match.id)
+    }
+  }
+
+  const currentIds = await getLinkedNoteIds(db, noteId)
+  const currentSet = new Set(currentIds)
+
+  for (const id of currentSet) {
+    if (!resolvedIds.has(id)) {
+      await removeLink(db, noteId, id)
+    }
+  }
+
+  for (const id of resolvedIds) {
+    if (!currentSet.has(id)) {
+      await addLink(db, noteId, id)
+    }
+  }
+}
+
 export async function savePersistedNote(
   db: Database,
   note: Note,
@@ -151,10 +193,12 @@ export async function savePersistedNote(
 
       await updateNote(db, note.id, updates)
       await syncTitleBasedWikilinks(db, note.title, updates.title)
+      await syncWikilinksToLinks(db, note.id, updates.content)
       return
     }
 
     await updateNote(db, note.id, updates)
+    await syncWikilinksToLinks(db, note.id, updates.content)
   })
 }
 

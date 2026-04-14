@@ -16,6 +16,7 @@ import {
   saveLiteratureAsPermanent,
   savePersistedNote,
   syncNoteLinks,
+  syncWikilinksToLinks,
 } from './note-workflow'
 
 describe('note-workflow helpers', () => {
@@ -226,6 +227,49 @@ describe('note-workflow helpers', () => {
       ['New Linked Note']
     )
     expect(resolved?.id).toBe(created.id)
+  })
+
+  it('syncs wikilinks in content to note_links for graph connectivity', async () => {
+    const target = await createNote(db, { type: 'permanent', title: 'Target Note', content: 'Body' })
+    const source = await createNote(db, { type: 'permanent', title: 'Source Note', content: 'Original' })
+
+    await savePersistedNote(db, source, {
+      title: source.title,
+      content: 'See [[Target Note]] for details.',
+    })
+
+    const links = await getLinkedNoteIds(db, source.id)
+    expect(links).toContain(target.id)
+  })
+
+  it('removes stale note_links when wikilinks are removed from content', async () => {
+    const target = await createNote(db, { type: 'permanent', title: 'Target Note', content: 'Body' })
+    const source = await createNote(db, { type: 'permanent', title: 'Source Note', content: `See [[Target Note]]` })
+
+    await savePersistedNote(db, source, { title: source.title, content: 'No more links.' })
+
+    const links = await getLinkedNoteIds(db, source.id)
+    expect(links).not.toContain(target.id)
+  })
+
+  it('syncs multiple wikilinks in a single note', async () => {
+    const a = await createNote(db, { type: 'permanent', title: 'Note A', content: 'A' })
+    const b = await createNote(db, { type: 'permanent', title: 'Note B', content: 'B' })
+    const source = await createNote(db, { type: 'permanent', title: 'Hub', content: '' })
+
+    await syncWikilinksToLinks(db, source.id, 'Links to [[Note A]] and [[Note B]].')
+
+    const links = await getLinkedNoteIds(db, source.id)
+    expect(links.sort()).toEqual([a.id, b.id].sort())
+  })
+
+  it('ignores wikilinks that do not resolve to existing notes', async () => {
+    const source = await createNote(db, { type: 'permanent', title: 'Source', content: '' })
+
+    await syncWikilinksToLinks(db, source.id, 'See [[Phantom Note]] nowhere.')
+
+    const links = await getLinkedNoteIds(db, source.id)
+    expect(links).toEqual([])
   })
 })
 
