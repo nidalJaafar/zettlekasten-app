@@ -29,6 +29,12 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
     window.dispatchEvent(new CustomEvent('zettel:new-permanent'))
   }
 
+  function handleReviewCardKeyDown(event: React.KeyboardEvent<HTMLDivElement>, noteId: string) {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    void onOpenNoteId(noteId)
+  }
+
   if (queue.length === 0) {
     return (
       <div style={{
@@ -75,10 +81,12 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {queue.map((note) => (
-            <button
+            <div
               key={note.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => void onOpenNoteId(note.id)}
+              onKeyDown={(event) => handleReviewCardKeyDown(event, note.id)}
               data-testid="review-card"
               style={{
                 background: BG.raised,
@@ -159,7 +167,7 @@ export default function ReviewScreen({ db, onOpenNoteId }: Props) {
                   {previewText(note.content) ?? 'No content yet. Open this note to continue shaping it.'}
                 </div>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       </div>

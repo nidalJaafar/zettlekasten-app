@@ -117,6 +117,31 @@ describe('ReviewScreen', () => {
     expect(onOpenNoteId).toHaveBeenCalledWith('note-1')
   })
 
+  it('opens the note when the review row is activated with the keyboard', async () => {
+    const onOpenNoteId = vi.fn(async () => {})
+
+    await act(async () => {
+      root.render(
+        <ReviewScreen db={createFakeDb() as any} onOpenNoteId={onOpenNoteId} />
+      )
+      await flushEffects()
+    })
+
+    const card = container.querySelector('[data-testid="review-card"]') as HTMLElement | null
+
+    expect(card).toBeTruthy()
+    expect(card?.tagName).toBe('DIV')
+    expect(card?.getAttribute('role')).toBe('button')
+    expect(card?.tabIndex).toBe(0)
+
+    await act(async () => {
+      card?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await flushEffects()
+    })
+
+    expect(onOpenNoteId).toHaveBeenCalledWith('note-1')
+  })
+
   it('shows fallback preview text when note content is empty', async () => {
     vi.mocked(getNotesByType).mockResolvedValue([
       makeNote({ id: 'note-2', title: 'Empty note', content: '   ' }),
