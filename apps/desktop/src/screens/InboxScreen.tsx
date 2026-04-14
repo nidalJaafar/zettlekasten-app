@@ -12,8 +12,10 @@ interface Props {
 export default function InboxScreen({ db, onCountChange }: Props) {
   const [notes, setNotes] = useState<Note[]>([])
   const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownContainerRef = useRef<HTMLDivElement>(null)
+  const bodyInputRef = useRef<HTMLTextAreaElement>(null)
 
   const loadNotes = useCallback(async () => {
     const fleeting = await getNotesByType(db, 'fleeting')
@@ -34,11 +36,37 @@ export default function InboxScreen({ db, onCountChange }: Props) {
   }, [])
 
   async function handleCapture() {
-    if (!title.trim()) return
-    await createNote(db, { type: 'fleeting', title: title.trim() })
+    const trimmedTitle = title.trim()
+    const trimmedBody = body.trim()
+
+    if (!trimmedTitle) return
+
+    await createNote(db, {
+      type: 'fleeting',
+      title: trimmedTitle,
+      ...(trimmedBody ? { content: trimmedBody } : {}),
+    })
+
     setTitle('')
+    setBody('')
     await loadNotes()
   }
+
+  function handleTitleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+
+    e.preventDefault()
+    bodyInputRef.current?.focus()
+  }
+
+  function handleBodyKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      void handleCapture()
+    }
+  }
+
+  const showBody = title.length > 0 || body.length > 0
 
   function handleOpen(note: Note) {
     const event = new CustomEvent('zettel:open-note', { detail: note })
@@ -99,7 +127,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCapture()}
+            onKeyDown={handleTitleKeyDown}
             placeholder="Write a fleeting thought…"
             style={{
               width: '100%',
@@ -113,16 +141,39 @@ export default function InboxScreen({ db, onCountChange }: Props) {
               outline: 'none',
             }}
           />
+          {showBody && (
+            <textarea
+              ref={bodyInputRef}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              onKeyDown={handleBodyKeyDown}
+              placeholder="Add a little more context…"
+              rows={3}
+              style={{
+                width: '100%',
+                resize: 'none',
+                background: 'transparent',
+                border: 'none',
+                color: TEXT.secondary,
+                fontFamily: FONT.ui,
+                fontSize: 14,
+                lineHeight: 1.6,
+                padding: '0 0 10px',
+                outline: 'none',
+              }}
+            />
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-            <span style={{ fontSize: 11, color: TEXT.faint }}>Press Enter to capture</span>
+            <span style={{ fontSize: 11, color: TEXT.faint }}>
+              {showBody ? 'Press Ctrl/Cmd+Enter to capture' : 'Press Enter for details or Capture to save'}
+            </span>
             {/* Dropdown for direct note creation */}
-            <div ref={dropdownContainerRef} style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="btn-new"
+                onClick={() => void handleCapture()}
                 style={{
                   background: 'transparent',
-                  color: TEXT.faint,
+                  color: ACCENT.ink,
                   border: 'none',
                   padding: '4px 0',
                   fontSize: 11,
@@ -130,29 +181,46 @@ export default function InboxScreen({ db, onCountChange }: Props) {
                   letterSpacing: '0.04em',
                 }}
               >
-                + New ▾
+                Capture
               </button>
-              {showDropdown && (
-                <div style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: '110%',
-                  background: BG.panel,
-                  border: `1px solid ${BORDER.base}`,
-                  borderRadius: 10,
-                  padding: 4,
-                  zIndex: 100,
-                  minWidth: 180,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                }}>
-                  <button onClick={handleCreateLiterature} className="dropdown-item" style={dropdownItemStyle}>
-                    Literature note
-                  </button>
-                  <button onClick={handleCreatePermanent} className="dropdown-item" style={dropdownItemStyle}>
-                    Permanent note
-                  </button>
-                </div>
-              )}
+              <div ref={dropdownContainerRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="btn-new"
+                  style={{
+                    background: 'transparent',
+                    color: TEXT.faint,
+                    border: 'none',
+                    padding: '4px 0',
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  + New ▾
+                </button>
+                {showDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '110%',
+                    background: BG.panel,
+                    border: `1px solid ${BORDER.base}`,
+                    borderRadius: 10,
+                    padding: 4,
+                    zIndex: 100,
+                    minWidth: 180,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                  }}>
+                    <button onClick={handleCreateLiterature} className="dropdown-item" style={dropdownItemStyle}>
+                      Literature note
+                    </button>
+                    <button onClick={handleCreatePermanent} className="dropdown-item" style={dropdownItemStyle}>
+                      Permanent note
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ vi.mock('@zettelkasten/core', () => ({
   createNote: vi.fn(),
 }))
 
-import { getNotesByType } from '@zettelkasten/core'
+import { createNote, getNotesByType } from '@zettelkasten/core'
 
 function createFakeDb() {
   return {
@@ -67,6 +67,29 @@ describe('InboxScreen', () => {
     })
   }
 
+  function getTitleInput() {
+    return container.querySelector('input[placeholder="Write a fleeting thought…"]') as HTMLInputElement
+  }
+
+  function getBodyInput() {
+    return container.querySelector('textarea[placeholder="Add a little more context…"]') as HTMLTextAreaElement | null
+  }
+
+  function getCaptureButton() {
+    return Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Capture'
+    ) as HTMLButtonElement | undefined
+  }
+
+  function setInputValue(element: HTMLInputElement | HTMLTextAreaElement, value: string) {
+    const prototype = element instanceof window.HTMLTextAreaElement
+      ? window.HTMLTextAreaElement.prototype
+      : window.HTMLInputElement.prototype
+    const setter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
+    setter?.call(element, value)
+    element.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
   it('dispatches zettel:open-note when a note card title/content area is clicked', async () => {
     const listener = vi.fn()
     window.addEventListener('zettel:open-note', listener)
@@ -109,5 +132,114 @@ describe('InboxScreen', () => {
     expect(detail.id).toBe('note-42')
 
     window.removeEventListener('zettel:review', listener)
+  })
+
+  it('still captures a fleeting note from the title field only', async () => {
+    vi.mocked(createNote).mockResolvedValue(mockNote)
+
+    await renderScreen()
+
+    const titleInput = getTitleInput()
+
+    await act(async () => {
+      setInputValue(titleInput, 'Just a title')
+      await flushEffects()
+    })
+
+    const captureButton = getCaptureButton()
+    expect(captureButton).toBeTruthy()
+
+    await act(async () => {
+      captureButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushEffects()
+    })
+
+    expect(createNote).toHaveBeenCalledWith(expect.anything(), {
+      type: 'fleeting',
+      title: 'Just a title',
+    })
+    expect(titleInput.value).toBe('')
+  })
+
+  it('captures both title and body when the body exists', async () => {
+    vi.mocked(createNote).mockResolvedValue(mockNote)
+
+    await renderScreen()
+
+    const titleInput = getTitleInput()
+
+    await act(async () => {
+      setInputValue(titleInput, 'Title with body')
+      titleInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await flushEffects()
+    })
+
+    const bodyInput = getBodyInput()
+    expect(bodyInput).toBeTruthy()
+
+    await act(async () => {
+      setInputValue(bodyInput!, 'Extra context')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      bodyInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true }))
+      await flushEffects()
+    })
+
+    expect(createNote).toHaveBeenCalledWith(expect.anything(), {
+      type: 'fleeting',
+      title: 'Title with body',
+      content: 'Extra context',
+    })
+  })
+
+  it('captures from the body field with ctrl+enter', async () => {
+    vi.mocked(createNote).mockResolvedValue(mockNote)
+
+    await renderScreen()
+
+    const titleInput = getTitleInput()
+
+    await act(async () => {
+      setInputValue(titleInput, 'Ctrl enter note')
+      titleInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await flushEffects()
+    })
+
+    const bodyInput = getBodyInput()
+    expect(bodyInput).toBeTruthy()
+
+    await act(async () => {
+      setInputValue(bodyInput!, 'Saved with ctrl enter')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      bodyInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }))
+      await flushEffects()
+    })
+
+    expect(createNote).toHaveBeenCalledWith(expect.anything(), {
+      type: 'fleeting',
+      title: 'Ctrl enter note',
+      content: 'Saved with ctrl enter',
+    })
+  })
+
+  it('does nothing when capture is empty', async () => {
+    vi.mocked(createNote).mockResolvedValue(mockNote)
+
+    await renderScreen()
+
+    const captureButton = getCaptureButton()
+    expect(captureButton).toBeTruthy()
+
+    await act(async () => {
+      captureButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushEffects()
+    })
+
+    expect(createNote).not.toHaveBeenCalled()
   })
 })
