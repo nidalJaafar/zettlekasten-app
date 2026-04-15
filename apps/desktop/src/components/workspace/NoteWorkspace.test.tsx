@@ -1168,6 +1168,74 @@ describe('NoteWorkspace', () => {
     expect(syncNoteLinks).toHaveBeenCalledWith(db, 'note-1', ['link-picked'])
   })
 
+  it('flushes pending literature edits before saving as permanent', async () => {
+    const db = createFakeDb()
+    const onOpenNoteId = vi.fn(async () => {})
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={onOpenNoteId}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Change title')
+      clickButton(container, 'Change body')
+      clickButton(container, 'Pick source')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(449)
+      await flushEffects()
+    })
+
+    expect(savePersistedNote).not.toHaveBeenCalled()
+
+    await act(async () => {
+      clickButton(container, 'Save note')
+      await flushEffects()
+    })
+
+    expect(savePersistedNote).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({
+        id: 'note-1',
+        type: 'literature',
+        title: 'Loaded note',
+        content: 'Loaded body',
+        source_id: 'source-1',
+      }),
+      {
+        title: 'Updated title',
+        content: 'Updated body',
+        source_id: 'source-picked',
+      }
+    )
+    expect(saveLiteratureAsPermanent).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({
+        id: 'note-1',
+        type: 'literature',
+        title: 'Updated title',
+        content: 'Updated body',
+        source_id: 'source-picked',
+      }),
+      'Updated title',
+      'Updated body',
+      [],
+      true
+    )
+    expect(onOpenNoteId).toHaveBeenCalledWith('permanent-created')
+  })
+
   it('passes wikilink suggestions from existing notes into the document pane', async () => {
     const db = createFakeDb()
 

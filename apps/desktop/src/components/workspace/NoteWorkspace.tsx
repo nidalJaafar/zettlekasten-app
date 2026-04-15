@@ -84,6 +84,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
     content: string
     sourceId: string | null
   } | null>(null)
+  const autosaveTimeoutId = useRef<number | null>(null)
   const targetVersion = useRef(0)
   const isDraftTarget = target?.mode === 'draft'
   const isEditable = Boolean(target)
@@ -147,6 +148,10 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
     targetVersion.current = version
 
     if (!target) {
+      if (autosaveTimeoutId.current !== null) {
+        window.clearTimeout(autosaveTimeoutId.current)
+        autosaveTimeoutId.current = null
+      }
       inFlightSave.current = null
       setDeletePending(false)
       setLoadedNote(null)
@@ -157,6 +162,10 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
     }
 
     if (target.mode === 'draft') {
+      if (autosaveTimeoutId.current !== null) {
+        window.clearTimeout(autosaveTimeoutId.current)
+        autosaveTimeoutId.current = null
+      }
       inFlightSave.current = null
       setDeletePending(false)
       setLoadedNote(null)
@@ -239,6 +248,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
 
     const saveVersion = targetVersion.current
     const timeoutId = window.setTimeout(() => {
+      autosaveTimeoutId.current = null
       if (deletePending || targetVersion.current !== saveVersion) {
         return
       }
@@ -282,11 +292,43 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
           setSaveState('error')
         })
     }, 450)
+    autosaveTimeoutId.current = timeoutId
 
     return () => {
       window.clearTimeout(timeoutId)
+      if (autosaveTimeoutId.current === timeoutId) {
+        autosaveTimeoutId.current = null
+      }
     }
   }, [db, deletePending, draft.content, draft.sourceId, draft.title, loadedNote])
+
+  async function flushLoadedLiteratureDraft(note: Note): Promise<Note> {
+    if (autosaveTimeoutId.current !== null) {
+      window.clearTimeout(autosaveTimeoutId.current)
+      autosaveTimeoutId.current = null
+    }
+
+    inFlightSave.current = null
+
+    await savePersistedNote(db, note, {
+      title: draft.title,
+      content: draft.content,
+      source_id: draft.sourceId,
+    })
+
+    const flushedNote: Note = {
+      ...note,
+      title: draft.title,
+      content: draft.content,
+      source_id: draft.sourceId,
+      updated_at: Date.now(),
+    }
+
+    setLoadedNote((current) => (current && current.id === note.id ? flushedNote : current))
+    setSaveState('saved')
+
+    return flushedNote
+  }
 
   async function handlePromoteToLiterature() {
     setError(null)
@@ -345,9 +387,10 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
       if (!loadedNote) return
 
       if (loadedNote.type === 'literature') {
+        const flushedNote = await flushLoadedLiteratureDraft(loadedNote)
         const created = await saveLiteratureAsPermanent(
           db,
-          loadedNote,
+          flushedNote,
           draft.title,
           draft.content,
           draft.linkedIds,
