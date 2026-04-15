@@ -9,8 +9,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, Stack } from 'expo-router'
 import {
   getNotesByType,
   softDeleteNote,
@@ -27,20 +28,16 @@ import {
 import { useAppStore } from '../../src/store'
 import { BG, TEXT, FONT, BORDER, ACCENT, typeColor, glassStyle } from '../../src/theme'
 import MarkdownInput from '../../src/components/MarkdownInput'
-import SourcePicker from '../../src/components/SourcePicker'
-import LinkPicker from '../../src/components/LinkPicker'
 
 export default function WorkspaceScreen() {
   const router = useRouter()
-  const { db, activeNote, setActiveNote } = useAppStore()
+  const { db, activeNote, setActiveNote, setPendingSourceCallback, setPendingLinkCallback } = useAppStore()
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [sourceId, setSourceId] = useState<string | null>(null)
   const [ownWords, setOwnWords] = useState(false)
   const [linkedIds, setLinkedIds] = useState<string[]>([])
-  const [sourcePickerVisible, setSourcePickerVisible] = useState(false)
-  const [linkPickerVisible, setLinkPickerVisible] = useState(false)
   const [source, setSource] = useState<Source | null>(null)
   const [wikilinkOptions, setWikilinkOptions] = useState<{ id: string; title: string }[]>([])
 
@@ -156,10 +153,25 @@ export default function WorkspaceScreen() {
     ])
   }, [db, activeNote, setActiveNote, router])
 
+  const openSourcePicker = useCallback(() => {
+    setPendingSourceCallback((id) => {
+      if (id) setSourceId(id)
+    })
+    router.push('/source-picker')
+  }, [setPendingSourceCallback, router])
+
+  const openLinkPicker = useCallback(() => {
+    setPendingLinkCallback((ids) => {
+      setLinkedIds(ids)
+    })
+    router.push('/link-picker')
+  }, [setPendingLinkCallback, router])
+
   if (!activeNote || !db) {
     return (
       <View style={styles.emptyRoot}>
-        <Text style={styles.emptyTitle}>Workspace</Text>
+        <Stack.Screen.Title large>Workspace</Stack.Screen.Title>
+        <Stack.Header blurEffect="systemMaterialDark" transparent />
         <Text style={styles.emptyMessage}>Select a note from Inbox or create a new one</Text>
       </View>
     )
@@ -177,16 +189,9 @@ export default function WorkspaceScreen() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => {
-            setActiveNote(null)
-            router.navigate('/(tabs)')
-          }}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-        >
-          <Text style={styles.backText}>Back</Text>
-        </Pressable>
+      <Stack.Screen.Title>{title || 'Workspace'}</Stack.Screen.Title>
+      <Stack.Header blurEffect="systemMaterialDark" transparent />
+      <View style={styles.typeBar}>
         <View style={[styles.typeBadge, { borderColor: color }]}>
           <Text style={[styles.typeBadgeText, { color }]}>{noteType}</Text>
         </View>
@@ -220,7 +225,7 @@ export default function WorkspaceScreen() {
               <View style={styles.contextRow}>
                 <Text style={styles.contextLabel}>Source</Text>
                 <Pressable
-                  onPress={() => setSourcePickerVisible(true)}
+                  onPress={openSourcePicker}
                   style={({ pressed }) => [
                     glassStyle.pill,
                     styles.contextBtn,
@@ -256,22 +261,22 @@ export default function WorkspaceScreen() {
                 </View>
               )}
 
-              <Pressable
-                onPress={() => setOwnWords(!ownWords)}
-                style={({ pressed }) => [styles.checkRow, pressed && styles.pressed]}
-              >
-                <View style={[styles.checkbox, ownWords && styles.checkboxActive]}>
-                  {ownWords && <Text style={styles.checkIcon}>x</Text>}
-                </View>
+              <View style={styles.checkRow}>
+                <Switch
+                  value={ownWords}
+                  onValueChange={setOwnWords}
+                  trackColor={{ false: BORDER.base, true: ACCENT.ink }}
+                  thumbColor={ownWords ? TEXT.primary : TEXT.muted}
+                />
                 <Text style={styles.checkLabel}>Written in own words</Text>
-              </Pressable>
+              </View>
 
               <View style={styles.contextRow}>
                 <Text style={styles.contextLabel}>
                   Links ({linkedIds.length})
                 </Text>
                 <Pressable
-                  onPress={() => setLinkPickerVisible(true)}
+                  onPress={openLinkPicker}
                   style={({ pressed }) => [
                     glassStyle.pill,
                     styles.contextBtn,
@@ -322,22 +327,6 @@ export default function WorkspaceScreen() {
           </Pressable>
         </View>
       </ScrollView>
-
-      <SourcePicker
-        db={db}
-        selectedId={sourceId}
-        onSelect={(id) => setSourceId(id)}
-        visible={sourcePickerVisible}
-        onClose={() => setSourcePickerVisible(false)}
-      />
-
-      <LinkPicker
-        db={db}
-        selectedIds={linkedIds}
-        onChange={setLinkedIds}
-        visible={linkPickerVisible}
-        onClose={() => setLinkPickerVisible(false)}
-      />
     </KeyboardAvoidingView>
   )
 }
@@ -353,41 +342,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyTitle: {
-    color: TEXT.primary,
-    fontFamily: FONT.display,
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
   emptyMessage: {
     color: TEXT.muted,
     fontFamily: FONT.ui,
     fontSize: 14,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER.faint,
-  },
-  backBtn: {
-    paddingVertical: 4,
-  },
-  backText: {
-    color: ACCENT.ink,
-    fontFamily: FONT.ui,
-    fontSize: 14,
+  typeBar: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   typeBadge: {
     borderWidth: 1,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 3,
+    alignSelf: 'flex-start',
   },
   typeBadgeText: {
     fontFamily: FONT.mono,
@@ -453,25 +423,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     gap: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: BORDER.base,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxActive: {
-    backgroundColor: ACCENT.ink,
-    borderColor: ACCENT.ink,
-  },
-  checkIcon: {
-    color: BG.base,
-    fontFamily: FONT.ui,
-    fontSize: 11,
-    fontWeight: '700',
   },
   checkLabel: {
     color: TEXT.primary,

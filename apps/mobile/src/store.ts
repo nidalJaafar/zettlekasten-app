@@ -8,6 +8,10 @@ interface AppState {
   initialized: boolean
   initDb: () => Promise<void>
   setActiveNote: (note: Note | null) => void
+  pendingSourceCallback: ((id: string | null) => void) | null
+  setPendingSourceCallback: (cb: ((id: string | null) => void) | null) => void
+  pendingLinkCallback: ((ids: string[]) => void) | null
+  setPendingLinkCallback: (cb: ((ids: string[]) => void) | null) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -19,4 +23,8 @@ export const useAppStore = create<AppState>((set) => ({
     set({ db, initialized: true })
   },
   setActiveNote: (note) => set({ activeNote: note }),
+  pendingSourceCallback: null,
+  setPendingSourceCallback: (cb) => set({ pendingSourceCallback: cb }),
+  pendingLinkCallback: null,
+  setPendingLinkCallback: (cb) => set({ pendingLinkCallback: cb }),
 }))
