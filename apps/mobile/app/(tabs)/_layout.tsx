@@ -1,21 +1,25 @@
-import { Tabs } from 'expo-router'
-import { glassStyle, TEXT, FONT } from '../../src/theme'
+import { NativeTabs, Label } from 'expo-router/unstable-native-tabs'
+import { BG, TEXT } from '../../src/theme'
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: TEXT.primary,
-        tabBarInactiveTintColor: TEXT.muted,
-        tabBarLabelStyle: { fontFamily: FONT.ui, fontSize: 11 },
-        tabBarStyle: [glassStyle.tabBar, { position: 'absolute' }],
-      }}
+    <NativeTabs
+      blurEffect="systemMaterialDark"
+      backgroundColor={BG.base}
+      tintColor={TEXT.primary}
     >
-      <Tabs.Screen name="index" options={{ title: 'Inbox' }} />
-      <Tabs.Screen name="workspace" options={{ title: 'Editor' }} />
-      <Tabs.Screen name="library" options={{ title: 'Library' }} />
-      <Tabs.Screen name="graph" options={{ title: 'Graph' }} />
-    </Tabs>
+      <NativeTabs.Trigger name="index" options={{ backgroundColor: BG.base }}>
+        <Label>Inbox</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="workspace" options={{ backgroundColor: BG.base }}>
+        <Label>Editor</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="library" options={{ backgroundColor: BG.base }}>
+        <Label>Library</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="graph" options={{ backgroundColor: BG.base }}>
+        <Label>Graph</Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   )
 }
