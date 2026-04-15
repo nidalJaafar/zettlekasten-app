@@ -59,11 +59,27 @@ describe('runMigrations', () => {
       );
     `)
 
+    await db.execute(
+      `INSERT INTO notes (
+        id, type, title, content, created_at, updated_at, source_id, own_words_confirmed, deleted_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ['legacy-note', 'literature', 'Legacy title', 'Legacy content', 1, 2, null, 0, null]
+    )
+
     await runMigrations(db)
 
-    const row = await db.queryOne<{ processed_at: number | null }>(
-      'SELECT processed_at FROM notes LIMIT 1'
+    const row = await db.queryOne<{
+      id: string
+      title: string
+      processed_at: number | null
+    }>(
+      'SELECT id, title, processed_at FROM notes WHERE id = ?',
+      ['legacy-note']
     )
-    expect(row ?? null).toBeNull()
+    expect(row).toEqual({
+      id: 'legacy-note',
+      title: 'Legacy title',
+      processed_at: null,
+    })
   })
 })
