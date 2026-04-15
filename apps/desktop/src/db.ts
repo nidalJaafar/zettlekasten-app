@@ -3,6 +3,7 @@ import type { Database as CoreDatabase } from '@zettelkasten/core'
 
 let _db: Database | null = null
 let _dbPromise: Promise<Database> | null = null
+let _transactionQueue: Promise<void> = Promise.resolve()
 
 export async function getDb(): Promise<CoreDatabase> {
   if (!_db) {
@@ -34,14 +35,28 @@ export async function getDb(): Promise<CoreDatabase> {
       return rows[0] ?? null
     },
     async transaction<T>(work: (db: CoreDatabase) => Promise<T>) {
-      await _db!.execute('BEGIN IMMEDIATE')
+      const previousTransaction = _transactionQueue
+      let releaseTransaction!: () => void
+      _transactionQueue = new Promise<void>((resolve) => {
+        releaseTransaction = resolve
+      })
+
+      await previousTransaction
+
+      let beganTransaction = false
       try {
+        await _db!.execute('BEGIN IMMEDIATE')
+        beganTransaction = true
         const result = await work(adapter)
         await _db!.execute('COMMIT')
         return result
       } catch (error) {
-        await _db!.execute('ROLLBACK')
+        if (beganTransaction) {
+          await _db!.execute('ROLLBACK')
+        }
         throw error
+      } finally {
+        releaseTransaction()
       }
     },
   }

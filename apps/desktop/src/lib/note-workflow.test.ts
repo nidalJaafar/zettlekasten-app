@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createNote,
   getLinkedNoteIds,
@@ -18,6 +18,14 @@ import {
   syncNoteLinks,
   syncWikilinksToLinks,
 } from './note-workflow'
+
+const mockDatabaseLoad = vi.fn()
+
+vi.mock('@tauri-apps/plugin-sql', () => ({
+  default: {
+    load: mockDatabaseLoad,
+  },
+}))
 
 type TransactionalDatabase = Database & {
   transaction<T>(work: (db: Database) => Promise<T>): Promise<T>
@@ -202,6 +210,70 @@ describe('note-workflow helpers', () => {
 
     expect(permanentNotes).toEqual([{ id: linked.id, title: 'Existing permanent' }])
     expect(processed?.processed_at).toBeNull()
+  })
+
+  it('serializes overlapping desktop transactions on the shared connection', async () => {
+    vi.resetModules()
+    mockDatabaseLoad.mockReset()
+
+    const executeCalls: string[] = []
+    let inTransaction = false
+    let releaseFirstTransaction: (() => void) | null = null
+    let firstTransactionStarted!: () => void
+    const firstTransactionStartedPromise = new Promise<void>((resolve) => {
+      firstTransactionStarted = resolve
+    })
+    const firstTransactionGate = new Promise<void>((resolve) => {
+      releaseFirstTransaction = resolve
+    })
+
+    mockDatabaseLoad.mockResolvedValue({
+      async execute(sql: string) {
+        executeCalls.push(sql)
+
+        if (sql === 'BEGIN IMMEDIATE') {
+          if (inTransaction) {
+            throw new Error('cannot start a transaction within a transaction')
+          }
+          inTransaction = true
+          return
+        }
+
+        if (sql === 'COMMIT' || sql === 'ROLLBACK') {
+          inTransaction = false
+        }
+      },
+      async select<T>() {
+        return [] as T[]
+      },
+    })
+
+    const { getDb } = await import('../db')
+    const adapter = await getDb() as Database & {
+      transaction<T>(work: (db: Database) => Promise<T>): Promise<T>
+    }
+
+    const firstTransaction = adapter.transaction(async () => {
+      firstTransactionStarted()
+      await firstTransactionGate
+      return 'first'
+    })
+
+    await firstTransactionStartedPromise
+
+    const secondTransaction = adapter.transaction(async () => 'second')
+
+    releaseFirstTransaction?.()
+
+    await expect(Promise.all([firstTransaction, secondTransaction])).resolves.toEqual(['first', 'second'])
+    expect(executeCalls).toEqual([
+      'PRAGMA journal_mode = WAL',
+      'PRAGMA foreign_keys = ON',
+      'BEGIN IMMEDIATE',
+      'COMMIT',
+      'BEGIN IMMEDIATE',
+      'COMMIT',
+    ])
   })
 
   it('creates a permanent draft with links and own-words confirmation', async () => {
