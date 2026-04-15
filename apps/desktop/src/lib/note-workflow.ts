@@ -4,12 +4,16 @@ import {
   canSavePermanentNote,
   countNotesByType,
   createNote,
+  extractWikilinkTitles,
   getLinkedNoteIds,
   removeLink,
   updateNote,
   type Database,
   type Note,
 } from '@zettelkasten/core'
+import { rewriteTitleBasedWikilinks } from '@zettelkasten/core'
+
+export { rewriteTitleBasedWikilinks }
 
 type TransactionalDatabase = Database & {
   transaction<T>(work: (db: Database) => Promise<T>): Promise<T>
@@ -109,20 +113,6 @@ export async function createPermanentDraft(
 
 const AMBIGUOUS_TITLE_PROPAGATION_ERROR = 'Cannot propagate title-based wikilinks for ambiguous active titles.'
 
-export function rewriteTitleBasedWikilinks(content: string, oldTitle: string, newTitle: string): string {
-  if (oldTitle === newTitle || oldTitle.trim() === '' || newTitle.trim() === '') {
-    return content
-  }
-
-  return content.replace(/\[\[([^\[\]\|]+)(\|[^\[\]]*)?\]\]/g, (match, target: string, alias?: string) => {
-    if (target !== oldTitle) {
-      return match
-    }
-
-    return `[[${newTitle}${alias ?? ''}]]`
-  })
-}
-
 export async function syncTitleBasedWikilinks(db: Database, oldTitle: string, newTitle: string): Promise<void> {
   if (oldTitle === newTitle || oldTitle.trim() === '' || newTitle.trim() === '') {
     return
@@ -167,18 +157,6 @@ export async function ensureUniqueActiveTitle(db: Database, title: string, noteI
   if (match) {
     throw new Error(DUPLICATE_ACTIVE_TITLE_ERROR)
   }
-}
-
-const WIKILINK_EXTRACT_RE = /\[\[([^\]\|]+)(?:\|[^\]]*)?\]\]/g
-
-function extractWikilinkTitles(content: string): string[] {
-  const titles: string[] = []
-  let match: RegExpExecArray | null
-  WIKILINK_EXTRACT_RE.lastIndex = 0
-  while ((match = WIKILINK_EXTRACT_RE.exec(content)) !== null) {
-    titles.push(match[1].trim())
-  }
-  return titles
 }
 
 export async function syncWikilinksToLinks(db: Database, noteId: string, content: string): Promise<void> {

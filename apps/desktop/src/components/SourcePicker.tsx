@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { Database, Source, SourceType } from '@zettelkasten/core'
+import { createSource, deleteSource, getAllSources, type Database, type Source, type SourceType } from '@zettelkasten/core'
 import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
 interface Props {
@@ -19,8 +19,7 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
   const [newDesc, setNewDesc] = useState('')
 
   useEffect(() => {
-    db.query<Source>(`SELECT id, type, label, description, created_at FROM sources ORDER BY created_at DESC`)
-      .then(setSources)
+    getAllSources(db).then(setSources)
   }, [db])
 
   const filtered = sources.filter((s) =>
@@ -28,32 +27,24 @@ export default function SourcePicker({ db, selectedId, onSelect }: Props) {
   )
 
   async function handleDelete(sourceId: string) {
-    const ref = await db.queryOne<{ id: string }>(
-      'SELECT id FROM notes WHERE source_id = ? AND deleted_at IS NULL LIMIT 1',
-      [sourceId]
-    )
-    if (ref) {
-      window.alert('Cannot delete: this source is used by at least one note.')
+    try {
+      await deleteSource(db, sourceId)
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Cannot delete source.')
       return
     }
-    await db.execute('DELETE FROM sources WHERE id = ?', [sourceId])
     setSources((prev) => prev.filter((s) => s.id !== sourceId))
   }
 
   async function handleCreate() {
     if (!newLabel.trim()) return
-    const source: Source = {
-      id: globalThis.crypto.randomUUID(),
-      type: newType,
-      label: newLabel.trim(),
-      description: newDesc.trim() || null,
-      created_at: Date.now(),
-    }
+    let source
     try {
-      await db.execute(
-        `INSERT INTO sources (id, type, label, description, created_at) VALUES (?, ?, ?, ?, ?)`,
-        [source.id, source.type, source.label, source.description, source.created_at]
-      )
+      source = await createSource(db, {
+        type: newType,
+        label: newLabel.trim(),
+        description: newDesc.trim() || undefined,
+      })
     } catch (err) {
       console.error('Failed to create source:', err)
       return
