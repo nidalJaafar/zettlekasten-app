@@ -11,8 +11,16 @@ import {
   type Note,
 } from '@zettelkasten/core'
 
-export async function runInTransaction<T>(_db: Database, work: () => Promise<T>): Promise<T> {
-  return work()
+type TransactionalDatabase = Database & {
+  transaction<T>(work: (db: Database) => Promise<T>): Promise<T>
+}
+
+export async function runInTransaction<T>(db: Database, work: (db: Database) => Promise<T>): Promise<T> {
+  if (!('transaction' in db) || typeof db.transaction !== 'function') {
+    throw new Error('Database adapter does not support transactions.')
+  }
+
+  return (db as TransactionalDatabase).transaction(work)
 }
 
 export async function promoteFleetingToLiterature(
@@ -52,13 +60,13 @@ export async function saveLiteratureAsPermanent(
     throw new Error(check.reason)
   }
 
-  return runInTransaction(db, async () => {
-    const permanent = await createNote(db, { type: 'permanent', title, content })
-    await updateNote(db, permanent.id, { own_words_confirmed: 1 })
+  return runInTransaction(db, async (tx) => {
+    const permanent = await createNote(tx, { type: 'permanent', title, content })
+    await updateNote(tx, permanent.id, { own_words_confirmed: 1 })
     for (const linkedId of linkedIds) {
-      await addLink(db, permanent.id, linkedId)
+      await addLink(tx, permanent.id, linkedId)
     }
-    await updateNote(db, note.id, { processed_at: Date.now() })
+    await updateNote(tx, note.id, { processed_at: Date.now() })
     return { ...permanent, own_words_confirmed: 1 }
   })
 }
@@ -79,11 +87,11 @@ export async function createPermanentDraft(
     throw new Error(check.reason)
   }
 
-  return runInTransaction(db, async () => {
-    const permanent = await createNote(db, { type: 'permanent', title, content })
-    await updateNote(db, permanent.id, { own_words_confirmed: 1 })
+  return runInTransaction(db, async (tx) => {
+    const permanent = await createNote(tx, { type: 'permanent', title, content })
+    await updateNote(tx, permanent.id, { own_words_confirmed: 1 })
     for (const linkedId of linkedIds) {
-      await addLink(db, permanent.id, linkedId)
+      await addLink(tx, permanent.id, linkedId)
     }
     return { ...permanent, own_words_confirmed: 1 }
   })
@@ -182,23 +190,23 @@ export async function savePersistedNote(
     source_id?: string | null
   }
 ): Promise<void> {
-  await runInTransaction(db, async () => {
+  await runInTransaction(db, async (tx) => {
     if (note.title.trim() !== '' && updates.title.trim() !== '' && note.title !== updates.title) {
       if (
-        await hasAnotherActiveNoteWithTitle(db, note.id, note.title)
-        || await hasAnotherActiveNoteWithTitle(db, note.id, updates.title)
+        await hasAnotherActiveNoteWithTitle(tx, note.id, note.title)
+        || await hasAnotherActiveNoteWithTitle(tx, note.id, updates.title)
       ) {
         throw new Error(AMBIGUOUS_TITLE_PROPAGATION_ERROR)
       }
 
-      await updateNote(db, note.id, updates)
-      await syncTitleBasedWikilinks(db, note.title, updates.title)
-      await syncWikilinksToLinks(db, note.id, updates.content)
+      await updateNote(tx, note.id, updates)
+      await syncTitleBasedWikilinks(tx, note.title, updates.title)
+      await syncWikilinksToLinks(tx, note.id, updates.content)
       return
     }
 
-    await updateNote(db, note.id, updates)
-    await syncWikilinksToLinks(db, note.id, updates.content)
+    await updateNote(tx, note.id, updates)
+    await syncWikilinksToLinks(tx, note.id, updates.content)
   })
 }
 

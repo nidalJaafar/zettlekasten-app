@@ -19,11 +19,83 @@ import {
   syncWikilinksToLinks,
 } from './note-workflow'
 
+type TransactionalDatabase = Database & {
+  transaction<T>(work: (db: Database) => Promise<T>): Promise<T>
+}
+
+type Snapshot = {
+  sources: Record<string, unknown>[]
+  notes: Record<string, unknown>[]
+  noteLinks: Record<string, unknown>[]
+}
+
+async function createTransactionalTestDb(options?: {
+  failOnExecute?: (sql: string, params: unknown[]) => boolean
+}): Promise<TransactionalDatabase> {
+  const baseDb = await createMigratedDb()
+
+  async function takeSnapshot(): Promise<Snapshot> {
+    return {
+      sources: await baseDb.query<Record<string, unknown>>('SELECT * FROM sources ORDER BY id'),
+      notes: await baseDb.query<Record<string, unknown>>('SELECT * FROM notes ORDER BY id'),
+      noteLinks: await baseDb.query<Record<string, unknown>>(
+        'SELECT * FROM note_links ORDER BY from_note_id, to_note_id'
+      ),
+    }
+  }
+
+  async function restoreTable(db: Database, table: string, rows: Record<string, unknown>[]): Promise<void> {
+    for (const row of rows) {
+      const columns = Object.keys(row)
+      const placeholders = columns.map(() => '?').join(', ')
+      await db.execute(
+        `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`,
+        columns.map((column) => row[column])
+      )
+    }
+  }
+
+  async function restoreSnapshot(snapshot: Snapshot): Promise<void> {
+    await baseDb.execute('DELETE FROM note_links')
+    await baseDb.execute('DELETE FROM notes')
+    await baseDb.execute('DELETE FROM sources')
+    await restoreTable(baseDb, 'sources', snapshot.sources)
+    await restoreTable(baseDb, 'notes', snapshot.notes)
+    await restoreTable(baseDb, 'note_links', snapshot.noteLinks)
+  }
+
+  const db: TransactionalDatabase = {
+    async execute(sql: string, params: unknown[] = []) {
+      if (options?.failOnExecute?.(sql, params)) {
+        throw new Error('Injected execute failure')
+      }
+      await baseDb.execute(sql, params)
+    },
+    async query<T>(sql: string, params: unknown[] = []) {
+      return baseDb.query<T>(sql, params)
+    },
+    async queryOne<T>(sql: string, params: unknown[] = []) {
+      return baseDb.queryOne<T>(sql, params)
+    },
+    async transaction<T>(work: (db: Database) => Promise<T>) {
+      const snapshot = await takeSnapshot()
+      try {
+        return await work(db)
+      } catch (error) {
+        await restoreSnapshot(snapshot)
+        throw error
+      }
+    },
+  }
+
+  return db
+}
+
 describe('note-workflow helpers', () => {
   let db: Database
 
   beforeEach(async () => {
-    db = await createMigratedDb()
+    db = await createTransactionalTestDb()
   })
 
   it('commits successful operations', async () => {
@@ -81,6 +153,55 @@ describe('note-workflow helpers', () => {
     })
     expect(processed?.processed_at).not.toBeNull()
     expect(linkedIds).toEqual([linked.id])
+  })
+
+  it('rolls back permanent creation when linking fails mid-sequence', async () => {
+    let shouldFailLinkInsert = true
+    const transactionalDb = await createTransactionalTestDb({
+      failOnExecute(sql) {
+        if (!shouldFailLinkInsert) {
+          return false
+        }
+
+        const normalizedSql = sql.replace(/\s+/g, ' ').trim()
+        if (normalizedSql.startsWith('INSERT OR IGNORE INTO note_links')) {
+          shouldFailLinkInsert = false
+          return true
+        }
+
+        return false
+      },
+    })
+
+    const literature = await createNote(transactionalDb, {
+      type: 'literature',
+      title: 'Literature note',
+      content: 'Source summary',
+      source_id: await insertSource(transactionalDb),
+    })
+    const linked = await createNote(transactionalDb, {
+      type: 'permanent',
+      title: 'Existing permanent',
+      content: 'Anchor',
+    })
+
+    await expect(saveLiteratureAsPermanent(
+      transactionalDb,
+      literature,
+      'Permanent idea',
+      'My synthesis',
+      [linked.id],
+      true
+    )).rejects.toThrow('Injected execute failure')
+
+    const permanentNotes = await transactionalDb.query<Pick<Note, 'id' | 'title'>>(
+      'SELECT id, title FROM notes WHERE type = ?',
+      ['permanent']
+    )
+    const processed = await getNoteById(transactionalDb, literature.id)
+
+    expect(permanentNotes).toEqual([{ id: linked.id, title: 'Existing permanent' }])
+    expect(processed?.processed_at).toBeNull()
   })
 
   it('creates a permanent draft with links and own-words confirmation', async () => {

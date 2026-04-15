@@ -19,7 +19,10 @@ export async function getDb(): Promise<CoreDatabase> {
 
     await _dbPromise
   }
-  return {
+
+  const adapter: CoreDatabase & {
+    transaction<T>(work: (db: CoreDatabase) => Promise<T>): Promise<T>
+  } = {
     async execute(sql: string, params: unknown[] = []) {
       await _db!.execute(sql, params)
     },
@@ -30,5 +33,18 @@ export async function getDb(): Promise<CoreDatabase> {
       const rows = await _db!.select<T[]>(sql, params)
       return rows[0] ?? null
     },
+    async transaction<T>(work: (db: CoreDatabase) => Promise<T>) {
+      await _db!.execute('BEGIN IMMEDIATE')
+      try {
+        const result = await work(adapter)
+        await _db!.execute('COMMIT')
+        return result
+      } catch (error) {
+        await _db!.execute('ROLLBACK')
+        throw error
+      }
+    },
   }
+
+  return adapter
 }
