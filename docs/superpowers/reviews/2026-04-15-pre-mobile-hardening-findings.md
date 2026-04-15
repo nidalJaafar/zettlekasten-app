@@ -21,7 +21,7 @@ None yet.
   - Risk: mobile adds another client on top of the shared core package, so lifecycle enforcement that only exists in app-side orchestration can be bypassed and persisted as invalid note state.
   - Recommendation: add a core-level promotion API or enforce the existing promotion checks inside the mutation path that changes note types / creates permanent notes.
 
-- `packages/core/src/schema.ts:37-48` — Schema migrations have no regression coverage for existing databases
+- `packages/core/src/schema.ts:37-48`, `packages/core/tests/notes.test.ts:1-244`, `packages/core/tests/links.test.ts:1-96` — Schema migrations have no regression coverage for existing databases
   - Evidence: the core test files in `packages/core/tests` cover notes, links, and pure enforcement helpers, but none exercise `runMigrations()` against a legacy `notes` table or rerun the migration on an already-upgraded schema.
   - Risk: mobile rollout increases the chance of opening older local databases, and an additive-migration regression would only surface after users upgrade.
   - Recommendation: add migration tests that cover both idempotent re-runs on the current schema and upgrade from a pre-`processed_at` notes table.
@@ -41,4 +41,7 @@ None yet.
 
 ## Recommended Next Actions
 
-None yet.
+- Current post-core-review next actions:
+- add core-level enforcement for note-type transitions and permanent-note creation so shared clients cannot persist invalid lifecycle states
+- add migration tests covering both legacy-schema upgrade and idempotent reruns of `runMigrations()`
+- add core mutation tests for rejected skip/regressive transitions and permanent-note creation semantics
