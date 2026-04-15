@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, Stack } from 'expo-router'
 import { getNotesByType, getAllLinks, getNoteById } from '@zettelkasten/core'
 import type { Note, NoteLink } from '@zettelkasten/core'
 import { useAppStore } from '../../src/store'
@@ -79,6 +79,8 @@ export default function GraphScreen() {
 
   return (
     <View style={styles.root}>
+      <Stack.Screen.Title large>Graph</Stack.Screen.Title>
+      <Stack.Header blurEffect="systemMaterialDark" transparent />
       <GraphCanvas
         nodes={filteredNodes}
         edges={filteredEdges}
