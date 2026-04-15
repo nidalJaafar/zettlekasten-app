@@ -16,15 +16,7 @@ None yet.
 
 ### Important
 
-- `apps/desktop/src/lib/note-workflow.ts:14-16`, `apps/desktop/src/lib/note-workflow.ts:55-63`, `apps/desktop/src/lib/note-workflow.ts:82-89`, `apps/desktop/src/lib/note-workflow.ts:185-202` — Desktop "transactions" are no-ops, so multi-step note writes can partially persist
-  - Evidence: `runInTransaction()` just calls `work()` and never issues `BEGIN` / `COMMIT` / `ROLLBACK`, but the workflow helpers use it around multi-write sequences: permanent-note creation plus link creation plus literature processing, draft permanent creation plus links, and persisted note saves plus title/link propagation.
-  - Risk: any mid-sequence failure from the Tauri SQL plugin or a future mobile adapter can leave the database in split-brain state, such as a renamed note without synchronized backlinks, or a processed literature note without its intended permanent-note/link set.
-  - Recommendation: make the desktop database adapter expose real transaction support and require the workflow helpers to use it for every multi-write save/promotion path.
-
-- `apps/desktop/src/components/workspace/NoteWorkspace.tsx:205-289`, `apps/desktop/src/components/workspace/NoteWorkspace.tsx:329-357`, `apps/desktop/src/lib/note-workflow.ts:38-63`, `apps/desktop/src/components/workspace/NoteWorkspace.test.tsx:808-1217` — Saving a literature note as permanent can process a stale literature snapshot while autosave is still pending
-  - Evidence: autosave is debounced for 450 ms in `NoteWorkspace`, but `handleSaveAsPermanent()` immediately calls `saveLiteratureAsPermanent()` with the current draft for the new permanent note and the stale `loadedNote` object for the source literature note. Inside `saveLiteratureAsPermanent()`, the literature note is only updated with `processed_at`, so any unsaved title/content/source edits on the literature note are skipped if the user clicks "Save As Permanent" before autosave flushes.
-  - Risk: the permanent note can contain the latest synthesis while the preserved literature note remains in its older persisted state, which breaks the documented "preserve the literature note" workflow and creates stale reads that will be harder to reason about on mobile.
-  - Recommendation: flush or inline-persist pending literature-note edits before marking it processed, and add a regression test that clicks "Save As Permanent" during the autosave debounce window.
+Current core findings (from Task 2):
 
 - `packages/core/src/notes.ts:16-76` — Core note mutations can bypass the documented lifecycle
   - Evidence: `createNote()` allows direct `type: 'permanent'` inserts, and `updateNote()` only enforces "literature notes require a source" before writing `type`, so it can still move a note from `fleeting` straight to `permanent` or regress a note back to an earlier stage without calling `validatePromotion()` or `canSavePermanentNote()`.
@@ -41,6 +33,18 @@ None yet.
   - Risk: the current suite can stay green while shared clients still persist note states that violate the documented fleeting -> literature -> permanent flow.
   - Recommendation: add integration-style core tests around the public mutation API for rejected skip/regressive transitions and permanent-note creation semantics.
 
+Current desktop findings (added in Task 3):
+
+- `apps/desktop/src/lib/note-workflow.ts:14-16`, `apps/desktop/src/lib/note-workflow.ts:55-63`, `apps/desktop/src/lib/note-workflow.ts:82-89`, `apps/desktop/src/lib/note-workflow.ts:185-202` — Desktop "transactions" are no-ops, so multi-step note writes can partially persist
+  - Evidence: `runInTransaction()` just calls `work()` and never issues `BEGIN` / `COMMIT` / `ROLLBACK`, but the workflow helpers use it around multi-write sequences: permanent-note creation plus link creation plus literature processing, draft permanent creation plus links, and persisted note saves plus title/link propagation.
+  - Risk: any mid-sequence failure from the Tauri SQL plugin or a future mobile adapter can leave the database in split-brain state, such as a renamed note without synchronized backlinks, or a processed literature note without its intended permanent-note/link set.
+  - Recommendation: make the desktop database adapter expose real transaction support and require the workflow helpers to use it for every multi-write save/promotion path.
+
+- `apps/desktop/src/components/workspace/NoteWorkspace.tsx:205-289`, `apps/desktop/src/components/workspace/NoteWorkspace.tsx:329-357`, `apps/desktop/src/lib/note-workflow.ts:38-63`, `apps/desktop/src/components/workspace/NoteWorkspace.test.tsx:808-1217` — Saving a literature note as permanent can process a stale literature snapshot while autosave is still pending
+  - Evidence: autosave is debounced for 450 ms in `NoteWorkspace`, but `handleSaveAsPermanent()` immediately calls `saveLiteratureAsPermanent()` with the current draft for the new permanent note and the stale `loadedNote` object for the source literature note. Inside `saveLiteratureAsPermanent()`, the literature note is only updated with `processed_at`, so any unsaved title/content/source edits on the literature note are skipped if the user clicks "Save As Permanent" before autosave flushes.
+  - Risk: the permanent note can contain the latest synthesis while the preserved literature note remains in its older persisted state, which breaks the documented "preserve the literature note" workflow and creates stale reads that will be harder to reason about on mobile.
+  - Recommendation: flush or inline-persist pending literature-note edits before marking it processed, and add a regression test that clicks "Save As Permanent" during the autosave debounce window.
+
 - `apps/desktop/src/lib/note-workflow.ts:146-158`, `apps/desktop/src/components/workspace/NoteWorkspace.tsx:59-65`, `apps/desktop/src/components/workspace/NoteWorkspace.tsx:368-377`, `apps/desktop/src/lib/note-workflow.test.ts:167-273` — Title-based wikilinks still resolve ambiguously across duplicate active note titles
   - Evidence: duplicate active titles are still allowed, `syncWikilinksToLinks()` resolves each `[[Title]]` with `SELECT id FROM notes WHERE title = ? AND deleted_at IS NULL AND id != ? LIMIT 1`, and ctrl/cmd-click navigation uses `findNoteIdByTitle()` to open the most recently updated matching note. The code only rejects ambiguity for rename propagation, not for ordinary link syncing or note opening.
   - Risk: graph links and editor navigation can silently bind to the wrong note whenever two active notes share a title, which makes title-based wikilinks unsafe to reuse as a cross-platform note identity mechanism.
@@ -52,6 +56,8 @@ None yet.
   - Recommendation: skip deleted notes during title propagation unless there is an explicit product decision to mutate trash contents, and rename the regression test to match the intended behavior.
 
 ### Minor
+
+Current desktop findings (added in Task 3):
 
 - `apps/desktop/src/components/MarkdownEditor.tsx:94-119`, `apps/desktop/src/components/MarkdownEditor.tsx:175-191`, `apps/desktop/src/components/MarkdownEditor.test.tsx:23-208` — Wikilink picker positioning relies on viewport coordinates and has no coverage for scroll/resize behavior outside jsdom
   - Evidence: picker placement is derived from `coordsAtPos()` and rendered with `position: 'fixed'`, but the coordinates are only recomputed on document/selection updates; there are no listeners for window resize, editor scroll, or container scroll while the picker stays open. The current tests cover rendering and selection insertion in jsdom, but nothing exercises scroll-sensitive positioning in a real browser engine.
