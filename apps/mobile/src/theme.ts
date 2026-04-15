@@ -51,11 +51,6 @@ export const glassStyle = StyleSheet.create({
     borderColor: BORDER.base,
     overflow: 'hidden',
   },
-  header: {
-    backgroundColor: 'rgba(23, 26, 32, 0.9)',
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER.faint,
-  },
   pill: {
     backgroundColor: 'rgba(29, 33, 40, 0.9)',
     borderRadius: 20,
@@ -63,10 +58,5 @@ export const glassStyle = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
     borderColor: BORDER.base,
-  },
-  tabBar: {
-    backgroundColor: 'rgba(17, 19, 24, 0.9)',
-    borderTopWidth: 1,
-    borderTopColor: BORDER.faint,
   },
 })
