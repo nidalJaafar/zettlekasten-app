@@ -205,4 +205,32 @@ describe('MarkdownEditor', () => {
 
     expect(container.querySelector('.wikilink-picker')).toBeNull()
   })
+
+  it('refreshes picker position on window resize', async () => {
+    const addSpy = vi.spyOn(window, 'addEventListener')
+    const removeSpy = vi.spyOn(window, 'removeEventListener')
+
+    await act(async () => {
+      root.render(
+        <MarkdownEditor
+          value="See [[Al"
+          onChange={vi.fn()}
+          wikilinkOptions={[{ id: '1', title: 'Alpha Note' }]}
+        />
+      )
+    })
+
+    const resizeCalls = addSpy.mock.calls.filter(([event]) => event === 'resize')
+    expect(resizeCalls.length).toBeGreaterThanOrEqual(1)
+
+    await act(async () => {
+      root.unmount()
+    })
+
+    const removeResizeCalls = removeSpy.mock.calls.filter(([event]) => event === 'resize')
+    expect(removeResizeCalls.length).toBeGreaterThanOrEqual(1)
+
+    addSpy.mockRestore()
+    removeSpy.mockRestore()
+  })
 })

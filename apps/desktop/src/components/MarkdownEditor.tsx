@@ -90,6 +90,22 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
   readOnlyRef.current = readOnly
   const cursorPosRef = useRef(value.length)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const editorViewRef = useRef<EditorView | null>(null)
+
+  const refreshPickerPosition = useCallback(() => {
+    if (!activeQuery || !editorViewRef.current) {
+      return
+    }
+    const coords = editorViewRef.current.coordsAtPos(activeQuery.from)
+    if (coords) {
+      setPickerPos({ left: coords.left, top: coords.bottom })
+    }
+  }, [activeQuery])
+
+  useEffect(() => {
+    window.addEventListener('resize', refreshPickerPosition)
+    return () => window.removeEventListener('resize', refreshPickerPosition)
+  }, [refreshPickerPosition])
 
   const cursorTracker = useMemo(() => EditorView.updateListener.of((update) => {
     if (update.selectionSet) {
@@ -165,6 +181,7 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
         placeholder={placeholder}
         theme="dark"
         style={{ minHeight }}
+        onCreateEditor={(view) => { editorViewRef.current = view }}
         basicSetup={{
           lineNumbers: true,
           foldGutter: false,
