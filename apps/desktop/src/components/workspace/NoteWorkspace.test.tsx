@@ -1204,6 +1204,11 @@ describe('NoteWorkspace', () => {
       await flushEffects()
     })
 
+    await act(async () => {
+      vi.advanceTimersByTime(1000)
+      await flushEffects()
+    })
+
     expect(savePersistedNote).toHaveBeenCalledWith(
       db,
       expect.objectContaining({
@@ -1219,6 +1224,75 @@ describe('NoteWorkspace', () => {
         source_id: 'source-picked',
       }
     )
+    expect(saveLiteratureAsPermanent).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({
+        id: 'note-1',
+        type: 'literature',
+        title: 'Updated title',
+        content: 'Updated body',
+        source_id: 'source-picked',
+      }),
+      'Updated title',
+      'Updated body',
+      [],
+      true
+    )
+    expect(savePersistedNote).toHaveBeenCalledTimes(1)
+    expect(onOpenNoteId).toHaveBeenCalledWith('permanent-created')
+  })
+
+  it('waits for an in-flight autosave before promoting literature to permanent', async () => {
+    const db = createFakeDb()
+    const onOpenNoteId = vi.fn(async () => {})
+    let resolveFirstSave: (() => void) | null = null
+
+    vi.mocked(savePersistedNote).mockImplementationOnce(() => new Promise<void>((resolve) => {
+      resolveFirstSave = resolve
+    }))
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'note', noteId: 'note-1' }}
+          onOpenNoteId={onOpenNoteId}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Change title')
+      clickButton(container, 'Change body')
+      clickButton(container, 'Pick source')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(450)
+      await flushEffects()
+    })
+
+    expect(savePersistedNote).toHaveBeenCalledTimes(1)
+    expect(container.textContent).toContain('Pane save state: saving')
+
+    await act(async () => {
+      clickButton(container, 'Save note')
+      await flushEffects()
+    })
+
+    expect(savePersistedNote).toHaveBeenCalledTimes(1)
+    expect(saveLiteratureAsPermanent).not.toHaveBeenCalled()
+
+    await act(async () => {
+      resolveFirstSave?.()
+      await flushEffects()
+    })
+
+    expect(savePersistedNote).toHaveBeenCalledTimes(1)
     expect(saveLiteratureAsPermanent).toHaveBeenCalledWith(
       db,
       expect.objectContaining({

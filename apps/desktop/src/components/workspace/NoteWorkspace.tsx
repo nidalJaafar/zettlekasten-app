@@ -42,6 +42,13 @@ export const EMPTY_DRAFT: WorkspaceDraft = {
   linkedIds: [],
 }
 
+interface AutosaveSnapshot {
+  noteId: string
+  title: string
+  content: string
+  sourceId: string | null
+}
+
 const COMPACT_WORKSPACE_BREAKPOINT = 1200
 const COMPACT_DRAWER_OVERLAY = `${BG.canvas}b8`
 const COMPACT_DRAWER_SHADOW = `0 0 32px ${BG.canvas}`
@@ -65,6 +72,22 @@ async function findNoteIdByTitle(db: Database, title: string): Promise<string | 
   return match?.id ?? null
 }
 
+function applyDraftToNote(note: Note, nextDraft: Pick<WorkspaceDraft, 'title' | 'content' | 'sourceId'>): Note {
+  return {
+    ...note,
+    title: nextDraft.title,
+    content: nextDraft.content,
+    source_id: nextDraft.sourceId,
+    updated_at: Date.now(),
+  }
+}
+
+function noteMatchesDraft(note: Note, nextDraft: Pick<WorkspaceDraft, 'title' | 'content' | 'sourceId'>): boolean {
+  return note.title === nextDraft.title
+    && note.content === nextDraft.content
+    && note.source_id === nextDraft.sourceId
+}
+
 export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, onInboxCountChange }: Props) {
   const railPane = useResizablePane(WORKSPACE_RAIL_PANE)
   const contextPane = useResizablePane({ ...WORKSPACE_CONTEXT_PANE, direction: 'right' })
@@ -78,19 +101,24 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
     label: string
     description: string | null
   } | null>(null)
-  const inFlightSave = useRef<{
+  const inFlightSave = useRef<AutosaveSnapshot | null>(null)
+  const autosavePromise = useRef<{
     noteId: string
-    title: string
-    content: string
-    sourceId: string | null
+    promise: Promise<Note>
+    snapshot: AutosaveSnapshot
   } | null>(null)
   const autosaveTimeoutId = useRef<number | null>(null)
+  const loadedNoteRef = useRef<Note | null>(null)
+  const draftRef = useRef(draft)
   const targetVersion = useRef(0)
   const isDraftTarget = target?.mode === 'draft'
   const isEditable = Boolean(target)
   const [isCompact, setIsCompact] = useState(() => window.innerWidth < COMPACT_WORKSPACE_BREAKPOINT)
   const [openCompactPanel, setOpenCompactPanel] = useState<'rail' | 'context' | null>(null)
   const [wikilinkOptions, setWikilinkOptions] = useState<WikilinkOption[]>([])
+
+  loadedNoteRef.current = loadedNote
+  draftRef.current = draft
 
   useEffect(() => {
     function syncCompactMode() {
@@ -153,6 +181,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         autosaveTimeoutId.current = null
       }
       inFlightSave.current = null
+      autosavePromise.current = null
       setDeletePending(false)
       setLoadedNote(null)
       setDraft(EMPTY_DRAFT)
@@ -167,6 +196,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         autosaveTimeoutId.current = null
       }
       inFlightSave.current = null
+      autosavePromise.current = null
       setDeletePending(false)
       setLoadedNote(null)
       setDraft(EMPTY_DRAFT)
@@ -182,6 +212,7 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         if (cancelled || targetVersion.current !== version) return
         if (!note) {
           inFlightSave.current = null
+          autosavePromise.current = null
           setLoadedNote(null)
           setDraft(EMPTY_DRAFT)
           setSaveState('error')
@@ -195,11 +226,13 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         setLoadedNote(note)
         setDraft({ ...createDraftFromNote(note), linkedIds })
         inFlightSave.current = null
+        autosavePromise.current = null
         setSaveState('saved')
       })
       .catch((err) => {
         if (cancelled || targetVersion.current !== version) return
         inFlightSave.current = null
+        autosavePromise.current = null
         setLoadedNote(null)
         setDraft(EMPTY_DRAFT)
         setSaveState('error')
@@ -253,44 +286,51 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
         return
       }
 
-      inFlightSave.current = {
+      const snapshot: AutosaveSnapshot = {
         noteId: loadedNote.id,
         title: draft.title,
         content: draft.content,
         sourceId: draft.sourceId,
       }
+      inFlightSave.current = snapshot
       setError(null)
       setSaveState('saving')
-      void savePersistedNote(db, loadedNote, {
+      const saveOperation = savePersistedNote(db, loadedNote, {
         title: draft.title,
         content: draft.content,
         ...(loadedNote.type !== 'permanent' ? { source_id: draft.sourceId } : {}),
       })
         .then(() => {
+          const savedNote = applyDraftToNote(loadedNote, snapshot)
           if (targetVersion.current !== saveVersion) {
-            return
+            return savedNote
           }
           inFlightSave.current = null
-           setLoadedNote((current) => (current && current.id === loadedNote.id
-             ? {
-                 ...current,
-                 title: draft.title,
-                 content: draft.content,
-                source_id: loadedNote.type === 'permanent' ? current.source_id : draft.sourceId,
-                updated_at: Date.now(),
-               }
-             : current))
-           setError(null)
-           setSaveState('saved')
-         })
+          setLoadedNote((current) => (current && current.id === loadedNote.id ? savedNote : current))
+          setError(null)
+          setSaveState('saved')
+          return savedNote
+        })
         .catch((err) => {
           if (targetVersion.current !== saveVersion) {
-            return
+            throw err
           }
           inFlightSave.current = null
           setError(err instanceof Error ? err.message : String(err))
           setSaveState('error')
+          throw err
         })
+        .finally(() => {
+          if (autosavePromise.current?.promise === saveOperation) {
+            autosavePromise.current = null
+          }
+        })
+      autosavePromise.current = {
+        noteId: loadedNote.id,
+        promise: saveOperation,
+        snapshot,
+      }
+      void saveOperation.catch(() => undefined)
     }, 450)
     autosaveTimeoutId.current = timeoutId
 
@@ -308,21 +348,29 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
       autosaveTimeoutId.current = null
     }
 
-    inFlightSave.current = null
+    let baseNote = loadedNoteRef.current && loadedNoteRef.current.id === note.id ? loadedNoteRef.current : note
+    const activeAutosave = autosavePromise.current
+    if (activeAutosave && activeAutosave.noteId === note.id) {
+      baseNote = await activeAutosave.promise
+    }
 
-    await savePersistedNote(db, note, {
-      title: draft.title,
-      content: draft.content,
-      source_id: draft.sourceId,
+    const nextDraft = draftRef.current
+    if (noteMatchesDraft(baseNote, nextDraft)) {
+      inFlightSave.current = null
+      setSaveState('saved')
+      return baseNote
+    }
+
+    inFlightSave.current = null
+    autosavePromise.current = null
+
+    await savePersistedNote(db, baseNote, {
+      title: nextDraft.title,
+      content: nextDraft.content,
+      source_id: nextDraft.sourceId,
     })
 
-    const flushedNote: Note = {
-      ...note,
-      title: draft.title,
-      content: draft.content,
-      source_id: draft.sourceId,
-      updated_at: Date.now(),
-    }
+    const flushedNote = applyDraftToNote(baseNote, nextDraft)
 
     setLoadedNote((current) => (current && current.id === note.id ? flushedNote : current))
     setSaveState('saved')
