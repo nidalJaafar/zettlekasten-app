@@ -6,7 +6,7 @@ Date: 2026-04-15
 
 - `pnpm test`: passed
 - `pnpm typecheck`: passed
-- Desktop runtime verification: failed in this environment; `pnpm --filter @zettelkasten/desktop dev` compiled and launched `target/debug/zettelkasten`, but Vite then rejected workspace imports outside the worktree allow list before a usable window could be inspected, so window icon/context-menu/editor/note-editing checks could not be completed manually
+- Desktop runtime verification: manual UI verification was not completed in this environment; `pnpm --filter @zettelkasten/desktop dev` compiled and launched `target/debug/zettelkasten`, and `pnpm --filter @zettelkasten/desktop build` still failed because the frontend assets were not built first
 
 ## Findings
 
