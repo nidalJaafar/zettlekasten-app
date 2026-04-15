@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from 'react-native'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native'
+import { useLocalSearchParams } from 'expo-router'
 import { getNoteById, type Note } from '@zettelkasten/core'
 import { useAppStore } from '../../src/store'
-import { BG, TEXT, FONT, BORDER, typeColor, glassStyle } from '../../src/theme'
+import { BG, TEXT, FONT, typeColor, glassStyle } from '../../src/theme'
 import MarkdownInput from '../../src/components/MarkdownInput'
 
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const router = useRouter()
   const db = useAppStore((s) => s.db)
   const [note, setNote] = useState<Note | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,13 +31,7 @@ export default function NoteScreen() {
   if (!note) {
     return (
       <View style={styles.center}>
-        <Text style={styles.notFoundTitle}>Note not found</Text>
-        <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}
-        >
-          <Text style={styles.backText}>Go back</Text>
-        </Pressable>
+        <Text style={styles.notFoundText}>Note not found</Text>
       </View>
     )
   }
@@ -82,25 +75,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: BG.base,
   },
-  notFoundTitle: {
+  notFoundText: {
     color: TEXT.primary,
     fontFamily: FONT.display,
     fontSize: 22,
     fontWeight: '700',
-    marginBottom: 16,
-  },
-  backBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-  },
-  backText: {
-    color: TEXT.primary,
-    fontFamily: FONT.ui,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  pressed: {
-    opacity: 0.7,
   },
   header: {
     flexDirection: 'row',
