@@ -13,6 +13,20 @@ function assertLiteratureHasSource(type: NoteType, sourceId: string | null | und
   }
 }
 
+function assertValidTypeTransition(currentType: NoteType, nextType: NoteType): void {
+  if (currentType === nextType) return
+
+  const allowed: Record<NoteType, NoteType[]> = {
+    fleeting: ['literature'],
+    literature: [],
+    permanent: [],
+  }
+
+  if (!allowed[currentType].includes(nextType)) {
+    throw new Error(`Invalid lifecycle transition: ${currentType} -> ${nextType}`)
+  }
+}
+
 export async function createNote(db: Database, input: CreateNoteInput): Promise<Note> {
   assertLiteratureHasSource(input.type, input.source_id)
 
@@ -67,6 +81,9 @@ export async function updateNote(
 
   const nextType = updates.type ?? current.type
   const nextSourceId = updates.source_id !== undefined ? updates.source_id : current.source_id
+  if (updates.type !== undefined) {
+    assertValidTypeTransition(current.type, nextType)
+  }
   if (updates.type !== undefined || updates.source_id !== undefined) {
     assertLiteratureHasSource(nextType, nextSourceId)
   }

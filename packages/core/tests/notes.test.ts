@@ -177,6 +177,37 @@ describe('updateNote', () => {
     expect(updated?.type).toBe('literature')
     expect(updated?.source_id).toBe(sourceId)
   })
+
+  it('allows creating a permanent note directly', async () => {
+    const note = await createNote(db, { type: 'permanent', title: 'Evergreen' })
+    expect(note.type).toBe('permanent')
+  })
+
+  it('rejects skipping from fleeting straight to permanent on update', async () => {
+    const fleeting = await createNote(db, { type: 'fleeting', title: 'Draft' })
+
+    await expect(
+      updateNote(db, fleeting.id, { type: 'permanent' })
+    ).rejects.toThrow(/lifecycle/i)
+  })
+
+  it('rejects regressing from literature back to fleeting', async () => {
+    const sourceId = await insertSource()
+    const literature = await createNote(db, { type: 'literature', title: 'Lit', source_id: sourceId })
+
+    await expect(
+      updateNote(db, literature.id, { type: 'fleeting' })
+    ).rejects.toThrow(/lifecycle/i)
+  })
+
+  it('rejects regressing from permanent to literature', async () => {
+    const permanent = await createNote(db, { type: 'permanent', title: 'Permanent' })
+    const sourceId = await insertSource()
+
+    await expect(
+      updateNote(db, permanent.id, { type: 'literature', source_id: sourceId })
+    ).rejects.toThrow(/lifecycle/i)
+  })
 })
 
 describe('countNotesByType', () => {
