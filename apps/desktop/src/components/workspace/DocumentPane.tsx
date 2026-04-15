@@ -211,7 +211,7 @@ export default function DocumentPane({
             <div style={{
               border: `1px solid ${BORDER.base}`,
               borderRadius: 12,
-              overflow: 'visible',
+              overflow: 'hidden',
               background: BG.panel,
               boxShadow: '0 18px 40px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.02)',
             }}>

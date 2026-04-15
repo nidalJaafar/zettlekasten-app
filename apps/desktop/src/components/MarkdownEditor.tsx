@@ -106,11 +106,10 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
       }
       if (query) {
         const coords = update.view.coordsAtPos(query.from)
-        if (coords && wrapperRef.current) {
-          const wrapperRect = wrapperRef.current.getBoundingClientRect()
+        if (coords) {
           setPickerPos({
-            left: coords.left - wrapperRect.left,
-            top: coords.bottom - wrapperRect.top,
+            left: coords.left,
+            top: coords.bottom,
           })
         }
       } else {
@@ -177,7 +176,7 @@ export default function MarkdownEditor({ value, onChange, placeholder, minHeight
         <div
           className="wikilink-picker"
           style={{
-            position: 'absolute',
+            position: 'fixed',
             left: pickerPos ? pickerPos.left : 0,
             top: pickerPos ? pickerPos.top : 0,
             minWidth: 200,
