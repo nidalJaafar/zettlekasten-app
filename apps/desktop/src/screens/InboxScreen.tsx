@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { getNotesByType, createNote } from '@zettelkasten/core'
 import type { Database, Note } from '@zettelkasten/core'
+import { ensureUniqueActiveTitle } from '../lib/note-workflow'
 import NoteCard from '../components/NoteCard'
 import { BG, TEXT, ACCENT, FONT, BORDER } from '../theme'
 
@@ -16,6 +17,8 @@ export default function InboxScreen({ db, onCountChange }: Props) {
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownContainerRef = useRef<HTMLDivElement>(null)
   const bodyInputRef = useRef<HTMLTextAreaElement>(null)
+
+  const [error, setError] = useState<string | null>(null)
 
   const loadNotes = useCallback(async () => {
     const fleeting = await getNotesByType(db, 'fleeting')
@@ -41,6 +44,13 @@ export default function InboxScreen({ db, onCountChange }: Props) {
 
     if (!trimmedTitle) return
 
+    try {
+      await ensureUniqueActiveTitle(db, trimmedTitle)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Title already in use.')
+      return
+    }
+
     await createNote(db, {
       type: 'fleeting',
       title: trimmedTitle,
@@ -49,6 +59,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
 
     setTitle('')
     setBody('')
+    setError(null)
     await loadNotes()
   }
 
@@ -128,7 +139,7 @@ export default function InboxScreen({ db, onCountChange }: Props) {
           </div>
           <input
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => { setTitle(e.target.value); setError(null) }}
             onKeyDown={handleTitleKeyDown}
             placeholder="Write a fleeting thought…"
             style={{
@@ -143,6 +154,9 @@ export default function InboxScreen({ db, onCountChange }: Props) {
               outline: 'none',
             }}
           />
+          {error && (
+            <div style={{ fontSize: 11, color: ACCENT.ink, marginTop: 2 }}>{error}</div>
+          )}
           {showBody && (
             <textarea
               ref={bodyInputRef}

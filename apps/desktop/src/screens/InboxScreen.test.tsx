@@ -9,7 +9,12 @@ vi.mock('@zettelkasten/core', () => ({
   createNote: vi.fn(),
 }))
 
+vi.mock('../lib/note-workflow', () => ({
+  ensureUniqueActiveTitle: vi.fn(),
+}))
+
 import { createNote, getNotesByType } from '@zettelkasten/core'
+import { ensureUniqueActiveTitle } from '../lib/note-workflow'
 
 function createFakeDb() {
   return {
@@ -347,5 +352,31 @@ describe('InboxScreen', () => {
     expect(getBodyInput()).toBeNull()
     expect(container.textContent).toContain('2 fleeting notes waiting.')
     expect(container.textContent).toContain('Saved with body')
+  })
+
+  it('rejects capture when title duplicates an active note', async () => {
+    vi.mocked(ensureUniqueActiveTitle).mockRejectedValue(
+      new Error('Another active note already uses this title.')
+    )
+
+    await renderScreen()
+
+    const titleInput = getTitleInput()
+
+    await act(async () => {
+      setInputValue(titleInput, 'Duplicate title')
+      await flushEffects()
+    })
+
+    const captureButton = getCaptureButton()
+    expect(captureButton).toBeTruthy()
+
+    await act(async () => {
+      captureButton!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushEffects()
+    })
+
+    expect(createNote).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Another active note already uses this title')
   })
 })
