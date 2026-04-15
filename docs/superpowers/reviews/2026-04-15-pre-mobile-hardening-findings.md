@@ -6,7 +6,7 @@ Date: 2026-04-15
 
 - `pnpm test`: passed
 - `pnpm typecheck`: passed
-- Desktop runtime verification: pending
+- Desktop runtime verification: failed in this environment; `pnpm --filter @zettelkasten/desktop dev` compiled and launched `target/debug/zettelkasten`, but Vite then rejected workspace imports outside the worktree allow list before a usable window could be inspected, so window icon/context-menu/editor/note-editing checks could not be completed manually
 
 ## Findings
 
@@ -55,9 +55,19 @@ Current desktop findings (added in Task 3):
   - Risk: trashed notes are mutated behind the user's back, so restoring a deleted note can resurrect content the user never saw before deletion.
   - Recommendation: skip deleted notes during title propagation unless there is an explicit product decision to mutate trash contents, and rename the regression test to match the intended behavior.
 
+- `apps/desktop/src-tauri/tauri.conf.json:6-10` — Tauri build is not wired to produce the frontend assets it expects
+  - Evidence: `pnpm --filter @zettelkasten/desktop build` failed with `Unable to find your web assets... frontendDist is set to "../dist"`, and the Tauri config defines `frontendDist` plus `beforeDevCommand` but no `beforeBuildCommand` to create that `dist` directory before `tauri build` runs.
+  - Risk: desktop release/build verification can fail from a clean checkout or review worktree before any runtime-sensitive UI behavior is exercised, which weakens confidence in Linux packaging and startup hardening.
+  - Recommendation: add a `beforeBuildCommand` that builds the Vite frontend into the configured `frontendDist`, or point `frontendDist` at the actual output path produced by the existing build workflow.
+
 ### Minor
 
 Current desktop findings (added in Task 3):
+
+- `apps/desktop/src-tauri/tauri.conf.json:5` — The desktop bundle identifier ends with `.app`
+  - Evidence: `pnpm --filter @zettelkasten/desktop build` emitted Tauri's warning that `com.zettelkasten.app` is not recommended because identifiers ending in `.app` conflict with the macOS application bundle extension.
+  - Risk: desktop packaging metadata is already warning during build, which increases the chance of avoidable platform-specific bundle issues later even though the current review focus is Linux.
+  - Recommendation: switch to a reverse-DNS identifier that does not end with `.app`, such as a vendor- or org-scoped suffix.
 
 - `apps/desktop/src/components/MarkdownEditor.tsx:94-119`, `apps/desktop/src/components/MarkdownEditor.tsx:175-191`, `apps/desktop/src/components/MarkdownEditor.test.tsx:23-208` — Wikilink picker positioning relies on viewport coordinates and has no coverage for scroll/resize behavior outside jsdom
   - Evidence: picker placement is derived from `coordsAtPos()` and rendered with `position: 'fixed'`, but the coordinates are only recomputed on document/selection updates; there are no listeners for window resize, editor scroll, or container scroll while the picker stays open. The current tests cover rendering and selection insertion in jsdom, but nothing exercises scroll-sensitive positioning in a real browser engine.
