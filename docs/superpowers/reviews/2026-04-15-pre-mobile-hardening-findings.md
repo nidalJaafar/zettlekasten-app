@@ -18,11 +18,11 @@ No Critical findings identified.
 
 #### Core invariants and test coverage
 
-- `packages/core/src/notes.ts:16-76` — Core note mutations can bypass the documented lifecycle
+- `packages/core/src/notes.ts:16-76` — Core note mutations permit lifecycle flows that are stricter in the documented model than in the shipped UI
   - Severity: Important
-  - Evidence: `createNote()` allows direct `type: 'permanent'` inserts, and `updateNote()` only enforces "literature notes require a source" before writing `type`, so it can still move a note from `fleeting` straight to `permanent` or regress a note back to an earlier stage without calling `validatePromotion()` or `canSavePermanentNote()`.
-  - Risk: mobile adds another client on top of the shared core package, so lifecycle enforcement that only exists in app-side orchestration can be bypassed and persisted as invalid note state.
-  - Recommendation: add a core-level promotion API or enforce the existing promotion checks inside the mutation path that changes note types / creates permanent notes.
+  - Evidence: `createNote()` allows direct `type: 'permanent'` inserts, and `updateNote()` only enforces "literature notes require a source" before writing `type`, so it can still move a note from `fleeting` straight to `permanent` or regress a note back to an earlier stage without calling `validatePromotion()` or `canSavePermanentNote()`. That differs from the documented `fleeting -> literature -> permanent` lifecycle in core docs, but it matches the currently shipped desktop workflow, which still exposes direct permanent-note creation as an intentional path.
+  - Risk: mobile adds another client on top of the shared core package, so product policy is currently ambiguous across layers: shared APIs permit broader transitions than the documented lifecycle describes, and future clients can make inconsistent choices about which flows are valid.
+  - Recommendation: explicitly decide whether direct permanent creation and regressive transitions are supported product behavior, then align the shared core API, enforcement, and lifecycle documentation around that policy.
 
 - `packages/core/src/schema.ts:37-48`, `packages/core/tests/notes.test.ts:1-244`, `packages/core/tests/links.test.ts:1-96` — Schema migrations have no regression coverage for existing databases
   - Severity: Important
@@ -30,11 +30,11 @@ No Critical findings identified.
   - Risk: mobile rollout increases the chance of opening older local databases, and an additive-migration regression would only surface after users upgrade.
   - Recommendation: add migration tests that cover both idempotent re-runs on the current schema and upgrade from a pre-`processed_at` notes table.
 
-- `packages/core/tests/enforce.test.ts:18-95`, `packages/core/tests/notes.test.ts:114-180` — Tests never cover lifecycle-violating mutation paths
+- `packages/core/tests/enforce.test.ts:18-95`, `packages/core/tests/notes.test.ts:114-180` — Tests never cover lifecycle edge cases where shared mutation APIs and documented workflow diverge
   - Severity: Important
-  - Evidence: `enforce.test.ts` only unit-tests the helper functions in isolation, while `notes.test.ts` never attempts the mutation paths that currently remain possible in `notes.ts`, such as skipping `fleeting -> permanent`, regressing `literature -> fleeting`, or directly creating a permanent note outside the literature workflow.
-  - Risk: the current suite can stay green while shared clients still persist note states that violate the documented fleeting -> literature -> permanent flow.
-  - Recommendation: add integration-style core tests around the public mutation API for rejected skip/regressive transitions and permanent-note creation semantics.
+  - Evidence: `enforce.test.ts` only unit-tests the helper functions in isolation, while `notes.test.ts` never attempts the mutation paths that currently remain possible in `notes.ts`, such as skipping `fleeting -> permanent`, regressing `literature -> fleeting`, or directly creating a permanent note outside the literature review flow.
+  - Risk: the current suite can stay green while shared clients still rely on undocumented or inconsistently enforced lifecycle behavior, leaving the actual supported note-type transitions unclear.
+  - Recommendation: add integration-style core tests around the public mutation API that pin down the intended semantics for skip/regressive transitions and direct permanent-note creation.
 
 #### Desktop workflow and persistence correctness
 
@@ -92,7 +92,7 @@ None yet.
 
 ## Recommended Next Actions
 
-1. Enforce note lifecycle invariants in shared core mutation APIs and add integration coverage for rejected skip, regression, and direct-permanent creation paths.
+1. Decide and document the supported note lifecycle policy across core and desktop, then align shared mutation APIs and integration coverage around the intended skip, regression, and direct-permanent creation semantics.
 2. Add migration regression coverage for existing databases, including both legacy-schema upgrade and idempotent `runMigrations()` reruns.
 3. Restore transactional safety, or equivalent atomicity guarantees, for multi-write desktop save and promotion flows before reusing them in mobile-facing persistence paths.
 4. Eliminate stale literature saves during the autosave debounce race by flushing or inline-persisting pending edits before literature-to-permanent promotion, with a regression test for the debounce window.
