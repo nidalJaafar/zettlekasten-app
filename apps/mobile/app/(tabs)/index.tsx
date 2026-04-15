@@ -11,7 +11,7 @@ import {
   Platform,
   Alert,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, Stack } from 'expo-router'
 import { getNotesByType, createNote, type Note } from '@zettelkasten/core'
 import { ensureUniqueActiveTitle, DUPLICATE_ACTIVE_TITLE_ERROR } from '../../src/lib/note-workflow'
 import { useAppStore } from '../../src/store'
@@ -114,14 +114,8 @@ export default function InboxScreen() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[glassStyle.header, styles.header]}>
-        <Text style={styles.headerTitle}>Inbox</Text>
-        {notes.length > 0 && (
-          <View style={glassStyle.pill}>
-            <Text style={styles.countBadge}>{notes.length}</Text>
-          </View>
-        )}
-      </View>
+      <Stack.Screen.Title large>Inbox</Stack.Screen.Title>
+      <Stack.Header blurEffect="systemMaterialDark" transparent />
 
       <FlatList
         ref={listRef}
@@ -199,25 +193,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG.base,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 14,
-  },
-  headerTitle: {
-    color: TEXT.primary,
-    fontFamily: FONT.display,
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  countBadge: {
-    color: TEXT.primary,
-    fontFamily: FONT.mono,
-    fontSize: 12,
   },
   list: {
     paddingHorizontal: 16,
