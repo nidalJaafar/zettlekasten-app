@@ -2,13 +2,12 @@ import { useState, useCallback, useEffect } from 'react'
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   FlatList,
   StyleSheet,
   RefreshControl,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { getNoteById } from '@zettelkasten/core'
 import { useAppStore } from '../../src/store'
 import { BG, TEXT, FONT, glassStyle } from '../../src/theme'
@@ -74,27 +73,13 @@ export default function LibraryScreen() {
   )
 
   return (
-    <View style={styles.root}>
-      <View style={[glassStyle.header, styles.header]}>
-        <Text style={styles.headerTitle}>Library</Text>
-        {notes.length > 0 && (
-          <View style={glassStyle.pill}>
-            <Text style={styles.countBadge}>{notes.length}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.searchWrap}>
-        <View style={[glassStyle.card, styles.searchCard]}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search notes..."
-            placeholderTextColor={TEXT.muted}
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
-      </View>
+    <>
+      <Stack.Screen.Title large>Library</Stack.Screen.Title>
+      <Stack.Header blurEffect="systemMaterialDark" transparent />
+      <Stack.SearchBar
+        placeholder="Search notes..."
+        onChangeText={setSearch}
+      />
 
       <FlatList
         data={filtered}
@@ -127,48 +112,11 @@ export default function LibraryScreen() {
           </View>
         }
       />
-    </View>
+    </>
   )
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: BG.base,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 14,
-  },
-  headerTitle: {
-    color: TEXT.primary,
-    fontFamily: FONT.display,
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  countBadge: {
-    color: TEXT.primary,
-    fontFamily: FONT.mono,
-    fontSize: 12,
-  },
-  searchWrap: {
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  searchCard: {
-    paddingHorizontal: 14,
-    paddingVertical: 2,
-  },
-  searchInput: {
-    color: TEXT.primary,
-    fontFamily: FONT.ui,
-    fontSize: 14,
-    paddingVertical: 10,
-  },
   list: {
     paddingHorizontal: 16,
     paddingBottom: 100,
