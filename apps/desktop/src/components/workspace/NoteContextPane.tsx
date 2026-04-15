@@ -78,7 +78,25 @@ export default function NoteContextPane({
 
         {(isFleeting || isLiteratureFlow) && (
           <div>
-            <div style={sectionLabelStyle}>Source</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={sectionLabelStyle} >Source</div>
+              {sourceId && (
+                <button
+                  onClick={() => onSourceIdChange(null)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: TEXT.muted,
+                    fontSize: 11,
+                    cursor: 'pointer',
+                    padding: 0,
+                    fontFamily: FONT.ui,
+                  }}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
             <SourcePicker db={db} selectedId={sourceId} onSelect={(value) => onSourceIdChange(value)} />
           </div>
         )}
