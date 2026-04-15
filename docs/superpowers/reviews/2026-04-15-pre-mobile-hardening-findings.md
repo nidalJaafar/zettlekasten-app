@@ -16,6 +16,8 @@ No Critical findings identified.
 
 ### Important
 
+#### Core invariants and test coverage
+
 - `packages/core/src/notes.ts:16-76` — Core note mutations can bypass the documented lifecycle
   - Severity: Important
   - Evidence: `createNote()` allows direct `type: 'permanent'` inserts, and `updateNote()` only enforces "literature notes require a source" before writing `type`, so it can still move a note from `fleeting` straight to `permanent` or regress a note back to an earlier stage without calling `validatePromotion()` or `canSavePermanentNote()`.
@@ -33,6 +35,8 @@ No Critical findings identified.
   - Evidence: `enforce.test.ts` only unit-tests the helper functions in isolation, while `notes.test.ts` never attempts the mutation paths that currently remain possible in `notes.ts`, such as skipping `fleeting -> permanent`, regressing `literature -> fleeting`, or directly creating a permanent note outside the literature workflow.
   - Risk: the current suite can stay green while shared clients still persist note states that violate the documented fleeting -> literature -> permanent flow.
   - Recommendation: add integration-style core tests around the public mutation API for rejected skip/regressive transitions and permanent-note creation semantics.
+
+#### Desktop workflow and persistence correctness
 
 - `apps/desktop/src/lib/note-workflow.ts:14-16`, `apps/desktop/src/lib/note-workflow.ts:55-63`, `apps/desktop/src/lib/note-workflow.ts:82-89`, `apps/desktop/src/lib/note-workflow.ts:185-202` — Desktop "transactions" are no-ops, so multi-step note writes can partially persist
   - Severity: Important
@@ -58,6 +62,8 @@ No Critical findings identified.
   - Risk: trashed notes are mutated behind the user's back, so restoring a deleted note can resurrect content the user never saw before deletion.
   - Recommendation: skip deleted notes during title propagation unless there is an explicit product decision to mutate trash contents, and rename the regression test to match the intended behavior.
 
+#### Runtime and build hardening
+
 - `apps/desktop/src-tauri/tauri.conf.json:6-10` — Tauri build is not wired to produce the frontend assets it expects
   - Severity: Important
   - Evidence: `pnpm --filter @zettelkasten/desktop build` failed with `Unable to find your web assets... frontendDist is set to "../dist"`, and the Tauri config defines `frontendDist` plus `beforeDevCommand` but no `beforeBuildCommand` to create that `dist` directory before `tauri build` runs.
@@ -65,6 +71,8 @@ No Critical findings identified.
   - Recommendation: add a `beforeBuildCommand` that builds the Vite frontend into the configured `frontendDist`, or point `frontendDist` at the actual output path produced by the existing build workflow.
 
 ### Minor
+
+#### UI polish and packaging cleanup
 
 - `apps/desktop/src-tauri/tauri.conf.json:5` — The desktop bundle identifier ends with `.app`
   - Severity: Minor
@@ -84,6 +92,11 @@ None yet.
 
 ## Recommended Next Actions
 
-1. No Critical findings identified.
-2. Fix Important findings that affect shared core logic, persistence, editor correctness, or platform startup.
-3. Defer Minor findings unless they are trivial to include in the same change as a higher-priority fix.
+1. Enforce note lifecycle invariants in shared core mutation APIs and add integration coverage for rejected skip, regression, and direct-permanent creation paths.
+2. Add migration regression coverage for existing databases, including both legacy-schema upgrade and idempotent `runMigrations()` reruns.
+3. Restore transactional safety, or equivalent atomicity guarantees, for multi-write desktop save and promotion flows before reusing them in mobile-facing persistence paths.
+4. Eliminate stale literature saves during the autosave debounce race by flushing or inline-persisting pending edits before literature-to-permanent promotion, with a regression test for the debounce window.
+5. Resolve ambiguous title-based wikilink identity handling by choosing one safe direction and enforcing it consistently in sync and open-note paths.
+6. Stop title propagation from mutating deleted trash notes unless that behavior is explicitly intended and documented, and align the regression test with the intended behavior.
+7. Wire desktop release builds to produce frontend assets before Tauri bundling so clean worktrees can build and package without manual frontend setup.
+8. Address the lower-priority browser-coverage and packaging cleanup items by improving wikilink picker positioning coverage under scroll/resize and replacing the `.app` bundle identifier suffix.
