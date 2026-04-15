@@ -2,9 +2,10 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Zettelkasten",
   "version": "0.1.0",
-  "identifier": "com.zettelkasten.app",
+  "identifier": "com.zettelkasten.desktop",
   "build": {
     "beforeDevCommand": "pnpm exec vite",
+    "beforeBuildCommand": "pnpm run build:web",
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420"
   },
