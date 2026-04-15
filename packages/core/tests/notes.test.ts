@@ -200,6 +200,15 @@ describe('updateNote', () => {
     ).rejects.toThrow(/lifecycle/i)
   })
 
+  it('rejects changing literature to permanent on update', async () => {
+    const sourceId = await insertSource()
+    const literature = await createNote(db, { type: 'literature', title: 'Lit', source_id: sourceId })
+
+    await expect(
+      updateNote(db, literature.id, { type: 'permanent' })
+    ).rejects.toThrow(/lifecycle/i)
+  })
+
   it('rejects regressing from permanent to literature', async () => {
     const permanent = await createNote(db, { type: 'permanent', title: 'Permanent' })
     const sourceId = await insertSource()
