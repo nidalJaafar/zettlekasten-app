@@ -7,20 +7,17 @@ async function createRawDb(sql?: string): Promise<Database> {
   const SQL = await initSqlJs({})
   const raw = new SQL.Database()
   if (sql) raw.run(sql)
+  const execute = (s: string, p: unknown[] = []) => { raw.run(s, p as never[]) }
+  const query = <T>(s: string, p: unknown[] = []): T[] => {
+    const result = raw.exec(s, p as never[])
+    if (result.length === 0) return []
+    const [{ columns, values }] = result
+    return values.map((row) => Object.fromEntries(columns.map((c, i) => [c, row[i]])) as T)
+  }
   return {
-    async execute(statement: string, params: unknown[] = []) {
-      raw.run(statement, params as never[])
-    },
-    async query<T>(statement: string, params: unknown[] = []) {
-      const result = raw.exec(statement, params as never[])
-      if (result.length === 0) return []
-      const [{ columns, values }] = result
-      return values.map((row) => Object.fromEntries(columns.map((c, i) => [c, row[i]])) as T)
-    },
-    async queryOne<T>(statement: string, params: unknown[] = []) {
-      const rows = await this.query<T>(statement, params)
-      return rows[0] ?? null
-    },
+    execute: async (s: string, p: unknown[] = []) => execute(s, p),
+    query: async <T,>(s: string, p: unknown[] = []) => query<T>(s, p),
+    queryOne: async <T,>(s: string, p: unknown[] = []) => query<T>(s, p)[0] ?? null,
   }
 }
 
