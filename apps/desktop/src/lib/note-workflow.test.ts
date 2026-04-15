@@ -15,6 +15,7 @@ import {
   runInTransaction,
   saveLiteratureAsPermanent,
   savePersistedNote,
+  syncTitleBasedWikilinks,
   syncNoteLinks,
   syncWikilinksToLinks,
 } from './note-workflow'
@@ -353,7 +354,49 @@ describe('note-workflow helpers', () => {
       content: 'Keep [[Someone Else]] untouched.',
     })
     expect(await db.queryOne<{ content: string }>('SELECT content FROM notes WHERE id = ?', [deleted.id])).toMatchObject({
-      content: 'Deleted [[New Title]] should not change.',
+      content: 'Deleted [[Old Title]] should not change.',
+    })
+  })
+
+  it('rejects creating a permanent draft with a duplicate active title', async () => {
+    const linked = await createNote(db, { type: 'permanent', title: 'Anchor note', content: 'Existing note' })
+    await createNote(db, { type: 'permanent', title: 'Duplicate Title', content: 'Existing duplicate' })
+
+    await expect(createPermanentDraft(db, 'Duplicate Title', 'Draft body', [linked.id], true))
+      .rejects.toThrow('Another active note already uses this title.')
+  })
+
+  it('rejects saving a note to a duplicate active title with a workflow error', async () => {
+    const renamed = await createNote(db, { type: 'permanent', title: 'Original Title', content: 'Body' })
+    await createNote(db, { type: 'permanent', title: 'Duplicate Title', content: 'Existing duplicate' })
+
+    await expect(savePersistedNote(db, renamed, {
+      title: 'Duplicate Title',
+      content: 'Body',
+    })).rejects.toThrow('Another active note already uses this title.')
+  })
+
+  it('ignores deleted notes when propagating title-based wikilinks', async () => {
+    const active = await createNote(db, {
+      type: 'permanent',
+      title: 'Active consumer',
+      content: 'Active [[Old Title]] should change.',
+    })
+    const deleted = await createNote(db, {
+      type: 'permanent',
+      title: 'Deleted consumer',
+      content: 'Deleted [[Old Title]] should stay untouched.',
+    })
+
+    await updateNote(db, deleted.id, { deleted_at: Date.now() })
+
+    await syncTitleBasedWikilinks(db, 'Old Title', 'New Title')
+
+    expect(await getNoteById(db, active.id)).toMatchObject({
+      content: 'Active [[New Title]] should change.',
+    })
+    expect(await db.queryOne<{ content: string }>('SELECT content FROM notes WHERE id = ?', [deleted.id])).toMatchObject({
+      content: 'Deleted [[Old Title]] should stay untouched.',
     })
   })
 
@@ -384,7 +427,7 @@ describe('note-workflow helpers', () => {
     await expect(savePersistedNote(db, renamed, {
       title: 'New Title',
       content: 'Renamed note body',
-    })).rejects.toThrow('Cannot propagate title-based wikilinks for ambiguous active titles.')
+    })).rejects.toThrow('Another active note already uses this title.')
 
     expect(await getNoteById(db, renamed.id)).toMatchObject({ title: 'Old Title' })
   })

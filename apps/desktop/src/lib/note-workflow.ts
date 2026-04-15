@@ -15,6 +15,8 @@ type TransactionalDatabase = Database & {
   transaction<T>(work: (db: Database) => Promise<T>): Promise<T>
 }
 
+export const DUPLICATE_ACTIVE_TITLE_ERROR = 'Another active note already uses this title.'
+
 export async function runInTransaction<T>(db: Database, work: (db: Database) => Promise<T>): Promise<T> {
   if (!('transaction' in db) || typeof db.transaction !== 'function') {
     throw new Error('Database adapter does not support transactions.')
@@ -33,6 +35,10 @@ export async function promoteFleetingToLiterature(
   const check = canPromoteToLiterature({ ...note, source_id: sourceId })
   if (!check.ok) {
     throw new Error(check.reason)
+  }
+
+  if (note.title !== title && title.trim() !== '') {
+    await ensureUniqueActiveTitle(db, title, note.id)
   }
 
   await updateNote(db, note.id, {
@@ -61,6 +67,8 @@ export async function saveLiteratureAsPermanent(
   }
 
   return runInTransaction(db, async (tx) => {
+    await ensureUniqueActiveTitle(tx, title)
+
     const permanent = await createNote(tx, { type: 'permanent', title, content })
     await updateNote(tx, permanent.id, { own_words_confirmed: 1 })
     for (const linkedId of linkedIds) {
@@ -88,6 +96,8 @@ export async function createPermanentDraft(
   }
 
   return runInTransaction(db, async (tx) => {
+    await ensureUniqueActiveTitle(tx, title)
+
     const permanent = await createNote(tx, { type: 'permanent', title, content })
     await updateNote(tx, permanent.id, { own_words_confirmed: 1 })
     for (const linkedId of linkedIds) {
@@ -119,7 +129,7 @@ export async function syncTitleBasedWikilinks(db: Database, oldTitle: string, ne
   }
 
   const notes = await db.query<Pick<Note, 'id' | 'content'>>(
-    'SELECT id, content FROM notes'
+    'SELECT id, content FROM notes WHERE deleted_at IS NULL'
   )
 
   for (const note of notes) {
@@ -137,6 +147,26 @@ async function hasAnotherActiveNoteWithTitle(db: Database, noteId: string, title
   )
 
   return match !== null
+}
+
+export async function ensureUniqueActiveTitle(db: Database, title: string, noteId?: string): Promise<void> {
+  if (title.trim() === '') {
+    return
+  }
+
+  const match = noteId
+    ? await db.queryOne<{ id: string }>(
+      'SELECT id FROM notes WHERE title = ? AND deleted_at IS NULL AND id != ? LIMIT 1',
+      [title, noteId]
+    )
+    : await db.queryOne<{ id: string }>(
+      'SELECT id FROM notes WHERE title = ? AND deleted_at IS NULL LIMIT 1',
+      [title]
+    )
+
+  if (match) {
+    throw new Error(DUPLICATE_ACTIVE_TITLE_ERROR)
+  }
 }
 
 const WIKILINK_EXTRACT_RE = /\[\[([^\]\|]+)(?:\|[^\]]*)?\]\]/g
@@ -191,6 +221,10 @@ export async function savePersistedNote(
   }
 ): Promise<void> {
   await runInTransaction(db, async (tx) => {
+    if (note.title !== updates.title && updates.title.trim() !== '') {
+      await ensureUniqueActiveTitle(tx, updates.title, note.id)
+    }
+
     if (note.title.trim() !== '' && updates.title.trim() !== '' && note.title !== updates.title) {
       if (
         await hasAnotherActiveNoteWithTitle(tx, note.id, note.title)

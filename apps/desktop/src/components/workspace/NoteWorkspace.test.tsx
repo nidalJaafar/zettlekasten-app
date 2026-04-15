@@ -5,6 +5,7 @@ import type { Database, Note } from '@zettelkasten/core'
 import NoteWorkspace from './NoteWorkspace'
 import { createNote, getLinkedNoteIds, getNoteById, softDeleteNote } from '@zettelkasten/core'
 import {
+  ensureUniqueActiveTitle,
   promoteFleetingToLiterature,
   saveLiteratureAsPermanent,
   savePersistedNote,
@@ -19,6 +20,7 @@ vi.mock('@zettelkasten/core', () => ({
 }))
 
 vi.mock('../../lib/note-workflow', () => ({
+  ensureUniqueActiveTitle: vi.fn(),
   promoteFleetingToLiterature: vi.fn(),
   saveLiteratureAsPermanent: vi.fn(),
   savePersistedNote: vi.fn(),
@@ -257,6 +259,7 @@ describe('NoteWorkspace', () => {
       deleted_at: null,
       processed_at: null,
     } as Note)
+    vi.mocked(ensureUniqueActiveTitle).mockResolvedValue(undefined)
     vi.mocked(savePersistedNote).mockResolvedValue(undefined)
     vi.mocked(syncNoteLinks).mockResolvedValue(undefined)
   })
@@ -742,6 +745,40 @@ describe('NoteWorkspace', () => {
     expect(container.textContent).toContain(
       'Context error: Cannot propagate title-based wikilinks for ambiguous active titles.'
     )
+  })
+
+  it('shows a duplicate-title error instead of creating a draft literature note', async () => {
+    const db = createFakeDb()
+    const onOpenNoteId = vi.fn(async () => {})
+    vi.mocked(ensureUniqueActiveTitle).mockRejectedValueOnce(new Error('Another active note already uses this title.'))
+
+    await act(async () => {
+      root.render(
+        <NoteWorkspace
+          db={db}
+          target={{ mode: 'draft', noteType: 'literature' }}
+          onOpenNoteId={onOpenNoteId}
+          onOpenTarget={vi.fn()}
+          onInboxCountChange={vi.fn(async () => {})}
+        />
+      )
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Change title')
+      clickButton(container, 'Pick source')
+      await flushEffects()
+    })
+
+    await act(async () => {
+      clickButton(container, 'Promote note')
+      await flushEffects()
+    })
+
+    expect(createNote).not.toHaveBeenCalled()
+    expect(onOpenNoteId).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Context error: Another active note already uses this title.')
   })
 
   it('marks draft targets as unsaved instead of falsely reporting saved', async () => {

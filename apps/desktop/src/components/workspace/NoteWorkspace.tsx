@@ -4,6 +4,8 @@ import type { WorkspaceTarget } from '../../App'
 import { ACCENT, BG, BORDER, TEXT } from '../../theme'
 import {
   createPermanentDraft,
+  DUPLICATE_ACTIVE_TITLE_ERROR,
+  ensureUniqueActiveTitle,
   promoteFleetingToLiterature,
   savePersistedNote,
   saveLiteratureAsPermanent,
@@ -388,6 +390,8 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
 
     try {
       if (isDraftTarget) {
+        await ensureUniqueActiveTitle(db, draft.title)
+
         const created = await createNote(db, {
           type: 'literature',
           title: draft.title,
@@ -490,6 +494,14 @@ export default function NoteWorkspace({ db, target, onOpenNoteId, onOpenTarget, 
   }
 
   async function handleCreateWikilinkNote(title: string) {
+    try {
+      await ensureUniqueActiveTitle(db, title)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      setError(message || DUPLICATE_ACTIVE_TITLE_ERROR)
+      throw err
+    }
+
     const created = await createNote(db, { type: 'fleeting', title })
     await onInboxCountChange()
     void db.query<{ id: string; title: string }>(
