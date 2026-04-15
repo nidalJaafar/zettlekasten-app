@@ -1,4 +1,4 @@
-import { NativeTabs, Label } from 'expo-router/unstable-native-tabs'
+import { NativeTabs } from 'expo-router/unstable-native-tabs'
 import { BG, TEXT } from '../../src/theme'
 
 export default function TabLayout() {
@@ -8,17 +8,17 @@ export default function TabLayout() {
       backgroundColor={BG.base}
       tintColor={TEXT.primary}
     >
-      <NativeTabs.Trigger name="index" options={{ backgroundColor: BG.base }}>
-        <Label>Inbox</Label>
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="workspace" options={{ backgroundColor: BG.base }}>
-        <Label>Editor</Label>
+      <NativeTabs.Trigger name="workspace">
+        <NativeTabs.Trigger.Label>Editor</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="library" options={{ backgroundColor: BG.base }}>
-        <Label>Library</Label>
+      <NativeTabs.Trigger name="library">
+        <NativeTabs.Trigger.Label>Library</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="graph" options={{ backgroundColor: BG.base }}>
-        <Label>Graph</Label>
+      <NativeTabs.Trigger name="graph">
+        <NativeTabs.Trigger.Label>Graph</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   )

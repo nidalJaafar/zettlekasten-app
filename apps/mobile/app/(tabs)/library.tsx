@@ -78,7 +78,7 @@ export default function LibraryScreen() {
       <Stack.Header blurEffect="systemMaterialDark" transparent />
       <Stack.SearchBar
         placeholder="Search notes..."
-        onChangeText={setSearch}
+        onChangeText={(e: any) => setSearch(e.nativeEvent.text ?? '')}
       />
 
       <FlatList
