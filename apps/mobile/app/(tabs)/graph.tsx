@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native'
-import { useRouter, Stack } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { getNotesByType, getAllLinks, getNoteById } from '@zettelkasten/core'
 import type { Note, NoteLink } from '@zettelkasten/core'
 import { useAppStore } from '../../src/store'
@@ -78,53 +79,56 @@ export default function GraphScreen() {
   }, [db, selectedNote, setActiveNote, router])
 
   return (
-    <View style={styles.root}>
-      <Stack.Screen.Title large>Graph</Stack.Screen.Title>
-      <Stack.Header blurEffect="systemMaterialDark" transparent />
-      <GraphCanvas
-        nodes={filteredNodes}
-        edges={filteredEdges}
-        onNodePress={handleNodePress}
-      />
-
-      <View style={styles.searchOverlay}>
-        <View style={[glassStyle.card, styles.searchCard]}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Filter nodes..."
-            placeholderTextColor={TEXT.muted}
-            value={search}
-            onChangeText={setSearch}
-          />
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.canvas }}>
+      <View style={styles.root}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Graph</Text>
         </View>
-      </View>
+        <GraphCanvas
+          nodes={filteredNodes}
+          edges={filteredEdges}
+          onNodePress={handleNodePress}
+        />
 
-      {selectedNote && (
-        <View style={styles.detailOverlay}>
-          <View style={[glassStyle.card, styles.detailCard]}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailTitle} numberOfLines={1}>
-                {selectedNote.title || 'Untitled'}
-              </Text>
-              <View style={[styles.typeBadge, { borderColor: typeColor(selectedNote.type) }]}>
-                <Text style={[styles.typeText, { color: typeColor(selectedNote.type) }]}>
-                  {selectedNote.type}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.detailFooter}>
-              <Text style={styles.linkCount}>{selectedLinkCount} link{selectedLinkCount !== 1 ? 's' : ''}</Text>
-              <Pressable
-                onPress={handleOpen}
-                style={({ pressed }) => [glassStyle.pill, styles.openBtn, pressed && styles.pressed]}
-              >
-                <Text style={styles.openText}>Open</Text>
-              </Pressable>
-            </View>
+        <View style={styles.searchOverlay}>
+          <View style={[glassStyle.card, styles.searchCard]}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Filter nodes..."
+              placeholderTextColor={TEXT.muted}
+              value={search}
+              onChangeText={setSearch}
+            />
           </View>
         </View>
-      )}
-    </View>
+
+        {selectedNote && (
+          <View style={styles.detailOverlay}>
+            <View style={[glassStyle.card, styles.detailCard]}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailTitle} numberOfLines={1}>
+                  {selectedNote.title || 'Untitled'}
+                </Text>
+                <View style={[styles.typeBadge, { borderColor: typeColor(selectedNote.type) }]}>
+                  <Text style={[styles.typeText, { color: typeColor(selectedNote.type) }]}>
+                    {selectedNote.type}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.detailFooter}>
+                <Text style={styles.linkCount}>{selectedLinkCount} link{selectedLinkCount !== 1 ? 's' : ''}</Text>
+                <Pressable
+                  onPress={handleOpen}
+                  style={({ pressed }) => [glassStyle.pill, styles.openBtn, pressed && styles.pressed]}
+                >
+                  <Text style={styles.openText}>Open</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   )
 }
 
@@ -132,6 +136,17 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG.canvas,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  headerTitle: {
+    color: TEXT.primary,
+    fontFamily: FONT.ui,
+    fontSize: 22,
+    fontWeight: '700',
   },
   searchOverlay: {
     position: 'absolute',

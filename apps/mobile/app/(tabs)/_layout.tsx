@@ -1,12 +1,13 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs'
-import { BG, TEXT } from '../../src/theme'
+import { BG, TEXT, FONT } from '../../src/theme'
 
 export default function TabLayout() {
   return (
     <NativeTabs
       blurEffect="systemMaterialDark"
-      backgroundColor={BG.base}
+      backgroundColor={BG.panel}
       tintColor={TEXT.primary}
+      labelStyle={{ color: TEXT.secondary, fontFamily: FONT.ui, fontSize: 11 }}
     >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>

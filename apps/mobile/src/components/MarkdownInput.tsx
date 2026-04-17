@@ -62,6 +62,15 @@ export default function MarkdownInput({ value, onChange, placeholder, wikilinkOp
     handleAutocompleteSelect(note.title)
   }, [onCreateWikilinkNote, handleAutocompleteSelect])
 
+  const insertFormatting = useCallback((before: string, after: string) => {
+    const pos = cursorRef.current
+    const beforeText = value.slice(0, pos)
+    const afterText = value.slice(pos)
+    const newValue = beforeText + before + after + afterText
+    onChange(newValue)
+    cursorRef.current = pos + before.length
+  }, [value, onChange])
+
   const renderPreviewLine = useCallback(
     (line: string, idx: number) => {
       const parts: React.ReactNode[] = []
@@ -94,6 +103,22 @@ export default function MarkdownInput({ value, onChange, placeholder, wikilinkOp
   return (
     <View style={styles.container}>
       <View style={styles.toolbar}>
+        {mode === 'edit' && (
+          <>
+            <Pressable onPress={() => insertFormatting('**', '**')} style={styles.fmtBtn}>
+              <Text style={styles.fmtText}>B</Text>
+            </Pressable>
+            <Pressable onPress={() => insertFormatting('*', '*')} style={styles.fmtBtn}>
+              <Text style={styles.fmtText}>I</Text>
+            </Pressable>
+            <Pressable onPress={() => insertFormatting('\n# ', '')} style={styles.fmtBtn}>
+              <Text style={styles.fmtText}>H</Text>
+            </Pressable>
+            <Pressable onPress={() => insertFormatting('[[', ']]')} style={styles.fmtBtn}>
+              <Text style={styles.fmtText}>[[]]</Text>
+            </Pressable>
+          </>
+        )}
         <Pressable
           onPress={() => setMode(mode === 'edit' ? 'preview' : 'edit')}
           style={({ pressed }) => [glassStyle.pill, styles.toggleBtn, pressed && styles.pressed]}
@@ -193,7 +218,8 @@ const styles = StyleSheet.create({
   },
   toolbar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 6,
   },
   toggleBtn: {
@@ -205,6 +231,16 @@ const styles = StyleSheet.create({
     fontFamily: FONT.ui,
     fontSize: 12,
     fontWeight: '500',
+  },
+  fmtBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  fmtText: {
+    color: TEXT.secondary,
+    fontFamily: FONT.mono,
+    fontSize: 13,
+    fontWeight: '600',
   },
   editorContainer: {
     flex: 1,

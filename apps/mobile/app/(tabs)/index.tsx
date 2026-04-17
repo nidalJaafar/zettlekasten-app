@@ -11,7 +11,8 @@ import {
   Platform,
   Alert,
 } from 'react-native'
-import { useRouter, Stack } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { getNotesByType, createNote, type Note } from '@zettelkasten/core'
 import { ensureUniqueActiveTitle, DUPLICATE_ACTIVE_TITLE_ERROR } from '../../src/lib/note-workflow'
 import { useAppStore } from '../../src/store'
@@ -93,15 +94,19 @@ export default function InboxScreen() {
     Alert.alert('New Note', 'Choose a note type', [
       {
         text: 'Literature note',
-        onPress: () => {
-          setActiveNote(null)
+        onPress: async () => {
+          if (!db) return
+          const note = await createNote(db, { type: 'literature', title: 'Untitled', content: '' })
+          setActiveNote(note)
           router.navigate('/(tabs)/workspace')
         },
       },
       {
         text: 'Permanent note',
-        onPress: () => {
-          setActiveNote(null)
+        onPress: async () => {
+          if (!db) return
+          const note = await createNote(db, { type: 'permanent', title: 'Untitled', content: '' })
+          setActiveNote(note)
           router.navigate('/(tabs)/workspace')
         },
       },
@@ -110,14 +115,16 @@ export default function InboxScreen() {
   }, [setActiveNote, router])
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Stack.Screen.Title large>Inbox</Stack.Screen.Title>
-      <Stack.Header blurEffect="systemMaterialDark" transparent />
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.base }}>
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Inbox</Text>
+        </View>
 
-      <FlatList
+        <FlatList
         ref={listRef}
         data={notes}
         keyExtractor={(item) => item.id}
@@ -185,7 +192,8 @@ export default function InboxScreen() {
       >
         <Text style={styles.fabText}>+ New</Text>
       </Pressable>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 
@@ -193,6 +201,17 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG.base,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  headerTitle: {
+    color: TEXT.primary,
+    fontFamily: FONT.ui,
+    fontSize: 22,
+    fontWeight: '700',
   },
   list: {
     paddingHorizontal: 16,

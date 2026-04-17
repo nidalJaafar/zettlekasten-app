@@ -8,9 +8,10 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import { getAllSources, createSource, type Source, type SourceType } from '@zettelkasten/core'
+import { getAllSources, createSource, deleteSource, type Source, type SourceType } from '@zettelkasten/core'
 import { useAppStore } from '../src/store'
 import { BG, TEXT, FONT, BORDER, ACCENT, glassStyle } from '../src/theme'
 
@@ -65,6 +66,28 @@ export default function SourcePickerScreen() {
     handleSelect(source.id)
   }, [db, newLabel, newType, newDesc, loadSources, handleSelect])
 
+  const handleDelete = useCallback(
+    (item: Source) => {
+      Alert.alert('Delete Source', 'Are you sure?', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (!db) return
+            try {
+              await deleteSource(db, item.id)
+              await loadSources()
+            } catch (err) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to delete')
+            }
+          },
+        },
+      ])
+    },
+    [db, loadSources]
+  )
+
   return (
     <KeyboardAvoidingView
       style={styles.root}
@@ -85,20 +108,25 @@ export default function SourcePickerScreen() {
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <Pressable
-              onPress={() => handleSelect(item.id)}
-              style={({ pressed }) => [
-                glassStyle.card,
-                styles.sourceRow,
-                pressed && styles.pressed,
-              ]}
-            >
-              <View style={styles.sourceInfo}>
-                <Text style={styles.sourceLabel}>{item.label}</Text>
-                <View style={[styles.typeBadge, { borderColor: ACCENT.ink }]}>
-                  <Text style={styles.typeText}>{item.type}</Text>
-                </View>
-              </View>
-            </Pressable>
+               onPress={() => handleSelect(item.id)}
+               style={({ pressed }) => [
+                 glassStyle.card,
+                 styles.sourceRow,
+                 pressed && styles.pressed,
+               ]}
+             >
+               <View style={styles.sourceInfo}>
+                 <Text style={styles.sourceLabel}>{item.label}</Text>
+                 <View style={styles.sourceActions}>
+                   <View style={[styles.typeBadge, { borderColor: ACCENT.ink }]}>
+                     <Text style={styles.typeText}>{item.type}</Text>
+                   </View>
+                   <Pressable onPress={() => handleDelete(item)} style={styles.deleteBtn}>
+                     <Text style={styles.deleteText}>Delete</Text>
+                   </Pressable>
+                 </View>
+               </View>
+             </Pressable>
           )}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No sources found</Text>
@@ -206,6 +234,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  sourceActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   sourceLabel: {
     color: TEXT.primary,
     fontFamily: FONT.ui,
@@ -232,6 +265,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     marginTop: 30,
+  },
+  deleteBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  deleteText: {
+    color: ACCENT.danger,
+    fontFamily: FONT.ui,
+    fontSize: 12,
   },
   createBtn: {
     alignSelf: 'center',

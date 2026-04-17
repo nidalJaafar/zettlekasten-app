@@ -2,15 +2,17 @@ import { useState, useCallback, useEffect } from 'react'
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   FlatList,
   StyleSheet,
   RefreshControl,
 } from 'react-native'
-import { Stack, useRouter } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { getNoteById } from '@zettelkasten/core'
 import { useAppStore } from '../../src/store'
-import { BG, TEXT, FONT, glassStyle } from '../../src/theme'
+import { BG, TEXT, FONT, BORDER, glassStyle } from '../../src/theme'
 
 interface LibraryNote {
   id: string
@@ -73,13 +75,20 @@ export default function LibraryScreen() {
   )
 
   return (
-    <>
-      <Stack.Screen.Title large>Library</Stack.Screen.Title>
-      <Stack.Header blurEffect="systemMaterialDark" transparent />
-      <Stack.SearchBar
-        placeholder="Search notes..."
-        onChangeText={(e: any) => setSearch(e.nativeEvent.text ?? '')}
-      />
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.base }}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Library</Text>
+      </View>
+
+      <View style={styles.searchWrap}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search notes..."
+          placeholderTextColor={TEXT.muted}
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
 
       <FlatList
         data={filtered}
@@ -112,11 +121,37 @@ export default function LibraryScreen() {
           </View>
         }
       />
-    </>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  headerTitle: {
+    color: TEXT.primary,
+    fontFamily: FONT.ui,
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  searchWrap: {
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
+  searchInput: {
+    color: TEXT.primary,
+    fontFamily: FONT.ui,
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: BG.raised,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: BORDER.base,
+  },
   list: {
     paddingHorizontal: 16,
     paddingBottom: 100,

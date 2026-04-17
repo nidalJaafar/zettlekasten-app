@@ -11,9 +11,11 @@ import {
   Platform,
   Switch,
 } from 'react-native'
-import { useRouter, Stack } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import {
   getNotesByType,
+  countNotesByType,
   softDeleteNote,
   getSourceById,
   type Note,
@@ -40,7 +42,7 @@ export default function WorkspaceScreen() {
   const [linkedIds, setLinkedIds] = useState<string[]>([])
   const [source, setSource] = useState<Source | null>(null)
   const [wikilinkOptions, setWikilinkOptions] = useState<{ id: string; title: string }[]>([])
-
+  const [permCount, setPermCount] = useState(0)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const snapshotRef = useRef({ title: '', content: '' })
   const initializedRef = useRef<string | null>(null)
@@ -84,6 +86,11 @@ export default function WorkspaceScreen() {
     })
   }, [db])
 
+  useEffect(() => {
+    if (!db || !activeNote || activeNote.type !== 'literature') return
+    countNotesByType(db, 'permanent').then(setPermCount)
+  }, [db, activeNote])
+
   const debouncedSave = useCallback(() => {
     if (!db || !activeNote) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
@@ -94,7 +101,11 @@ export default function WorkspaceScreen() {
         await savePersistedNote(db, activeNote, { title, content })
         await syncWikilinksToLinks(db, activeNote.id, content)
         snapshotRef.current = { title, content }
-      } catch {}
+      } catch (err) {
+        if (err instanceof Error) {
+          Alert.alert('Save Error', err.message)
+        }
+      }
     }, 450)
   }, [db, activeNote, title, content])
 
@@ -169,11 +180,17 @@ export default function WorkspaceScreen() {
 
   if (!activeNote || !db) {
     return (
-      <View style={styles.emptyRoot}>
-        <Stack.Screen.Title large>Workspace</Stack.Screen.Title>
-        <Stack.Header blurEffect="systemMaterialDark" transparent />
-        <Text style={styles.emptyMessage}>Select a note from Inbox or create a new one</Text>
-      </View>
+      <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.base }}>
+        <View style={styles.emptyRoot}>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.navigate('/(tabs)')} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
+              <Text style={styles.backText}>Back</Text>
+            </Pressable>
+            <Text style={styles.headerTitle}>Workspace</Text>
+          </View>
+          <Text style={styles.emptyMessage}>Select a note from Inbox or create a new one</Text>
+        </View>
+      </SafeAreaView>
     )
   }
 
@@ -182,16 +199,21 @@ export default function WorkspaceScreen() {
 
   const canPromote = noteType === 'fleeting' && sourceId !== null
   const canSavePerm =
-    noteType === 'literature' && ownWords && linkedIds.length > 0
+    noteType === 'literature' && ownWords && (linkedIds.length > 0 || permCount === 0)
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <Stack.Screen.Title>{title || 'Workspace'}</Stack.Screen.Title>
-      <Stack.Header blurEffect="systemMaterialDark" transparent />
-      <View style={styles.typeBar}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.base }}>
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.header}>
+          <Pressable onPress={() => router.navigate('/(tabs)')} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>{title || 'Workspace'}</Text>
+        </View>
+        <View style={styles.typeBar}>
         <View style={[styles.typeBadge, { borderColor: color }]}>
           <Text style={[styles.typeBadgeText, { color }]}>{noteType}</Text>
         </View>
@@ -327,7 +349,8 @@ export default function WorkspaceScreen() {
           </Pressable>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 
@@ -341,6 +364,30 @@ const styles = StyleSheet.create({
     backgroundColor: BG.base,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+    gap: 10,
+  },
+  headerTitle: {
+    color: TEXT.primary,
+    fontFamily: FONT.ui,
+    fontSize: 18,
+    fontWeight: '700',
+    flex: 1,
+  },
+  backBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  backText: {
+    color: TEXT.secondary,
+    fontFamily: FONT.ui,
+    fontSize: 13,
   },
   emptyMessage: {
     color: TEXT.muted,
