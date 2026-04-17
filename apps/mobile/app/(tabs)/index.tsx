@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 import { getNotesByType, createNote, type Note } from '@zettelkasten/core'
 import { ensureUniqueActiveTitle, DUPLICATE_ACTIVE_TITLE_ERROR } from '../../src/lib/note-workflow'
 import { useAppStore } from '../../src/store'
@@ -38,6 +39,10 @@ export default function InboxScreen() {
   useEffect(() => {
     loadNotes()
   }, [loadNotes])
+
+  useFocusEffect(useCallback(() => {
+    loadNotes()
+  }, [loadNotes]))
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -122,6 +127,12 @@ export default function InboxScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Inbox</Text>
+          <Pressable
+            onPress={() => router.navigate('/trash')}
+            style={({ pressed }) => [styles.trashBtn, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={styles.trashBtnText}>Trash</Text>
+          </Pressable>
         </View>
 
         <FlatList
@@ -206,6 +217,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  trashBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  trashBtnText: {
+    color: TEXT.muted,
+    fontFamily: FONT.ui,
+    fontSize: 14,
   },
   headerTitle: {
     color: TEXT.primary,

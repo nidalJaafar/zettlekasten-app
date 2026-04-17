@@ -71,7 +71,7 @@ export async function saveLiteratureAsPermanent(
   }
 
   return runInTransaction(db, async (tx) => {
-    await ensureUniqueActiveTitle(tx, title)
+    await ensureUniqueActiveTitle(tx, title, note.id)
 
     const permanent = await createNote(tx, { type: 'permanent', title, content })
     await updateNote(tx, permanent.id, { own_words_confirmed: 1 })
