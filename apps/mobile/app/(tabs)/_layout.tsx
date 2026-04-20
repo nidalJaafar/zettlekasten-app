@@ -14,7 +14,7 @@ export default function TabLayout() {
         <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="review">
-        <NativeTabs.Trigger.Icon sf={{ default: 'square.and.pencil', selected: 'square.and.pencil' }} md="edit_note" />
+        <NativeTabs.Trigger.Icon sf={{ default: 'square', selected: 'square.and.pencil' }} md="edit_note" />
         <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="library">
