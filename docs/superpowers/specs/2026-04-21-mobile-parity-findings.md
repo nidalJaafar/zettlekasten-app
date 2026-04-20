@@ -9,12 +9,5 @@
 
 ### High
 
-- Parity bug - `apps/mobile/app/(tabs)/_layout.tsx`: mobile tab labels differ from desktop product concepts. Desktop top-level navigation is `Inbox`, `Workspace`, `Review`, `Library`, `Graph`, and `Trash`, but mobile exposes `Inbox`, `Editor`, `Library`, and `Graph`, which renames `Workspace`, omits `Review`, and removes `Trash` from the main product shell.
-- UI bug - `apps/mobile/app/(tabs)/_layout.tsx`: tab bar renders only one visible trigger in the reported state, which makes the rest of the top-level mobile product structure unreachable.
-- Parity bug - `apps/mobile/app/(tabs)/_layout.tsx`: mobile collapses distinct desktop top-level concepts into a single `workspace` route. Desktop keeps `workspace` and `review` as separate destinations in `apps/desktop/src/App.tsx`, but mobile has no top-level `review` route in the tab layout.
-
-### Medium
-
-- Parity bug - `apps/mobile/app/_layout.tsx`: `trash` exists only as a separate stack route instead of a primary navigation destination. Desktop includes `Trash` directly in the main app shell, so the mobile top-level structure does not match that product model.
-
-### Low
+- Parity bug - `apps/mobile/app/(tabs)/_layout.tsx`, `apps/mobile/app/_layout.tsx`: mobile top-level structure does not match the desktop product model in `apps/desktop/src/App.tsx`. Desktop exposes `Inbox`, `Workspace`, `Review`, `Library`, `Graph`, and `Trash` as primary app destinations, while mobile exposes only `Inbox`, `Editor`, `Library`, and `Graph` in tabs, renames the shared `Workspace` concept to `Editor`, omits a top-level `Review` destination, and places `trash` outside the main tab shell.
+- UI bug - `apps/mobile/app/(tabs)/_layout.tsx`: user-reported screenshot evidence shows the native tab bar rendering only one visible trigger in at least one state. This should be treated as a high-severity top-level navigation bug, but the file-based baseline alone does not prove the runtime rendering failure.
