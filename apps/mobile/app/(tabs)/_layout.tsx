@@ -12,8 +12,8 @@ export default function TabLayout() {
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="workspace">
-        <NativeTabs.Trigger.Label>Editor</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="review">
+        <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="library">
         <NativeTabs.Trigger.Label>Library</NativeTabs.Trigger.Label>

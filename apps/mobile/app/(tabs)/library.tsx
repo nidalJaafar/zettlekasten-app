@@ -68,7 +68,7 @@ export default function LibraryScreen() {
       const full = await getNoteById(db, note.id)
       if (full) {
         setActiveNote(full)
-        router.navigate('/(tabs)/workspace')
+        router.navigate('/(tabs)/review')
       }
     },
     [db, setActiveNote, router]

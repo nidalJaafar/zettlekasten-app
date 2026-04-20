@@ -82,7 +82,7 @@ export default function InboxScreen() {
   const handleNotePress = useCallback(
     (note: Note) => {
       setActiveNote(note)
-      router.navigate('/(tabs)/workspace')
+      router.navigate('/(tabs)/review')
     },
     [setActiveNote, router]
   )
@@ -90,7 +90,7 @@ export default function InboxScreen() {
   const handleProcess = useCallback(
     (note: Note) => {
       setActiveNote(note)
-      router.navigate('/(tabs)/workspace')
+      router.navigate('/(tabs)/review')
     },
     [setActiveNote, router]
   )
@@ -103,7 +103,7 @@ export default function InboxScreen() {
           if (!db) return
           const note = await createNote(db, { type: 'literature', title: 'Untitled', content: '' })
           setActiveNote(note)
-          router.navigate('/(tabs)/workspace')
+          router.navigate('/(tabs)/review')
         },
       },
       {
@@ -112,7 +112,7 @@ export default function InboxScreen() {
           if (!db) return
           const note = await createNote(db, { type: 'permanent', title: 'Untitled', content: '' })
           setActiveNote(note)
-          router.navigate('/(tabs)/workspace')
+          router.navigate('/(tabs)/review')
         },
       },
       { text: 'Cancel', style: 'cancel' },
