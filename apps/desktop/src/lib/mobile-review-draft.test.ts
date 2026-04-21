@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   consumeCompletedReviewDraft,
   consumeReviewDraft,
+  getCompletedReviewDraftLinkedIds,
   getInitialLinkPickerSelection,
   getInitialReviewState,
   mergeLinkedIdsIntoReviewDraft,
@@ -135,5 +136,20 @@ describe('mobile review draft helpers', () => {
     }
 
     expect(consumeCompletedReviewDraft(note, draft)).toBeNull()
+  })
+
+  it('returns linked ids to preserve from a completed draft for the active note', () => {
+    const note = createNote()
+    const draft: ReviewDraft = {
+      noteId: note.id,
+      title: 'Draft title',
+      content: 'Draft content',
+      sourceId: 'source-2',
+      ownWords: true,
+      linkedIds: ['perm-1', 'perm-2'],
+      roundTripComplete: true,
+    }
+
+    expect(getCompletedReviewDraftLinkedIds(note, draft)).toEqual(['perm-1', 'perm-2'])
   })
 })

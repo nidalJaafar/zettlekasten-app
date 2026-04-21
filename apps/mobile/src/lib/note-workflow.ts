@@ -62,6 +62,11 @@ export function consumeCompletedReviewDraft(note: Note, draft: ReviewDraft | nul
   return activeDraft?.roundTripComplete ? null : draft
 }
 
+export function getCompletedReviewDraftLinkedIds(note: Note, draft: ReviewDraft | null): string[] | null {
+  const activeDraft = getActiveReviewDraft(note, draft)
+  return activeDraft?.roundTripComplete ? activeDraft.linkedIds : null
+}
+
 export function getInitialLinkPickerSelection(draft: ReviewDraft | null): string[] {
   return draft?.linkedIds ?? []
 }

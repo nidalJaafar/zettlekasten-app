@@ -25,6 +25,7 @@ import {
 import {
   consumeCompletedReviewDraft,
   consumeReviewDraft,
+  getCompletedReviewDraftLinkedIds,
   mergeLinkedIdsIntoReviewDraft,
   promoteFleetingToLiterature,
   saveLiteratureAsPermanent,
@@ -57,6 +58,7 @@ export default function ReviewScreen() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const snapshotRef = useRef({ title: '', content: '', sourceId: null as string | null })
   const initializedRef = useRef<string | null>(null)
+  const skipLinkedHydrationRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!activeNote) {
@@ -92,8 +94,13 @@ export default function ReviewScreen() {
   useEffect(() => {
     if (!activeNote || !pendingReviewDraft) return
 
+    const completedLinkedIds = getCompletedReviewDraftLinkedIds(activeNote, pendingReviewDraft)
     const remainingDraft = consumeCompletedReviewDraft(activeNote, pendingReviewDraft)
     if (remainingDraft !== pendingReviewDraft) {
+      if (completedLinkedIds) {
+        setLinkedIds(completedLinkedIds)
+        skipLinkedHydrationRef.current = activeNote.id
+      }
       setPendingReviewDraft(remainingDraft)
     }
   }, [activeNote, pendingReviewDraft, setPendingReviewDraft])
@@ -128,6 +135,11 @@ export default function ReviewScreen() {
 
     if (pendingReviewDraft?.noteId === activeNote.id) {
       setLinkedIds(pendingReviewDraft.linkedIds)
+      return
+    }
+
+    if (skipLinkedHydrationRef.current === activeNote.id) {
+      skipLinkedHydrationRef.current = null
       return
     }
 
