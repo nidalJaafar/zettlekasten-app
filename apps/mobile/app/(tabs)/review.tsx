@@ -130,7 +130,14 @@ export default function ReviewScreen() {
       const snap = snapshotRef.current
       if (snap.title === title && snap.content === content) return
       try {
-        await savePersistedNote(db, activeNote, { title, content })
+        const updates = {
+          title,
+          content,
+          ...(activeNote.type !== 'permanent' ? { source_id: sourceId } : {}),
+        }
+
+        await savePersistedNote(db, activeNote, updates)
+        setActiveNote({ ...activeNote, ...updates })
         snapshotRef.current = { title, content }
       } catch (err) {
         if (err instanceof Error) {
@@ -138,7 +145,7 @@ export default function ReviewScreen() {
         }
       }
     }, 450)
-  }, [db, activeNote, title, content])
+  }, [db, activeNote, title, content, sourceId, setActiveNote])
 
   useEffect(() => {
     if (!activeNote) return
