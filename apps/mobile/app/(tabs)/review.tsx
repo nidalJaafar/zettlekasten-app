@@ -44,7 +44,7 @@ export default function ReviewScreen() {
   const [wikilinkOptions, setWikilinkOptions] = useState<{ id: string; title: string }[]>([])
   const [permCount, setPermCount] = useState(0)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const snapshotRef = useRef({ title: '', content: '' })
+  const snapshotRef = useRef({ title: '', content: '', sourceId: null as string | null })
   const initializedRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function ReviewScreen() {
       setOwnWords(false)
       setLinkedIds([])
       setSource(null)
-      snapshotRef.current = { title: '', content: '' }
+      snapshotRef.current = { title: '', content: '', sourceId: null }
       return
     }
     if (initializedRef.current === activeNote.id) return
@@ -67,7 +67,7 @@ export default function ReviewScreen() {
     setOwnWords(activeNote.own_words_confirmed === 1)
     setLinkedIds([])
     setSource(null)
-    snapshotRef.current = { title: activeNote.title, content: activeNote.content }
+    snapshotRef.current = { title: activeNote.title, content: activeNote.content, sourceId: activeNote.source_id }
   }, [activeNote])
 
   useEffect(() => {
@@ -128,7 +128,7 @@ export default function ReviewScreen() {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(async () => {
       const snap = snapshotRef.current
-      if (snap.title === title && snap.content === content) return
+      if (snap.title === title && snap.content === content && snap.sourceId === sourceId) return
       try {
         const updates = {
           title,
@@ -138,7 +138,7 @@ export default function ReviewScreen() {
 
         await savePersistedNote(db, activeNote, updates)
         setActiveNote({ ...activeNote, ...updates })
-        snapshotRef.current = { title, content }
+        snapshotRef.current = { title, content, sourceId }
       } catch (err) {
         if (err instanceof Error) {
           Alert.alert('Save Error', err.message)
@@ -153,7 +153,7 @@ export default function ReviewScreen() {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [title, content, activeNote, debouncedSave])
+  }, [title, content, sourceId, activeNote, debouncedSave])
 
   const handleTitleChange = useCallback((t: string) => {
     setTitle(t)
