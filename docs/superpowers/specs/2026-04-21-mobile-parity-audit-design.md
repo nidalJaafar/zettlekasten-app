@@ -82,6 +82,8 @@ These are bugs regardless of whether the underlying screens are still usable.
 6. Produce a concrete findings list with file references.
 7. Fix issues in small batches, verifying after each batch.
 
+Top-level parity baseline findings were captured in `docs/superpowers/specs/2026-04-21-mobile-parity-findings.md` from the desktop `App.tsx` versus mobile `_layout.tsx` and `(tabs)/_layout.tsx` comparison.
+
 ## Verification Gates
 
 For each fix batch:
