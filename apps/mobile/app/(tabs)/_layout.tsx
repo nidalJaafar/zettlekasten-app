@@ -7,7 +7,10 @@ export default function TabLayout() {
       blurEffect="systemMaterialDark"
       backgroundColor={BG.panel}
       tintColor={TEXT.primary}
-      labelStyle={{ color: TEXT.muted, fontFamily: FONT.ui, fontSize: 11, fontWeight: '500' }}
+      labelStyle={{
+        default: { color: TEXT.muted, fontFamily: FONT.ui, fontSize: 11, fontWeight: '500' },
+        selected: { color: TEXT.primary, fontFamily: FONT.ui, fontSize: 11, fontWeight: '600' },
+      }}
     >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Icon sf={{ default: 'tray', selected: 'tray.fill' }} md="inbox" />
