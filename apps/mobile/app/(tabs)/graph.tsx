@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -16,13 +16,16 @@ export default function GraphScreen() {
   const [links, setLinks] = useState<NoteLink[]>([])
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const loadRequestRef = useRef(0)
 
   const loadData = useCallback(async () => {
     if (!db) return
+    const requestId = ++loadRequestRef.current
     const [n, l] = await Promise.all([
       getNotesByType(db, 'permanent'),
       getAllLinks(db),
     ])
+    if (requestId !== loadRequestRef.current) return
     setNotes(n)
     setLinks(l)
   }, [db])

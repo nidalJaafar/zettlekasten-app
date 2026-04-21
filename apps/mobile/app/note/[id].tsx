@@ -24,11 +24,19 @@ export default function NoteScreen() {
     }
 
     setLoading(true)
-    getNoteById(db, id).then((n) => {
-      if (cancelled) return
-      setNote(n ?? null)
-      setLoading(false)
-    })
+    getNoteById(db, id)
+      .then((n) => {
+        if (cancelled) return
+        setNote(n ?? null)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setNote(null)
+      })
+      .finally(() => {
+        if (cancelled) return
+        setLoading(false)
+      })
 
     return () => {
       cancelled = true

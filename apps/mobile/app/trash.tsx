@@ -23,12 +23,15 @@ export default function TrashScreen() {
   const [notes, setNotes] = useState<Note[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const openSwipeable = useRef<Swipeable | null>(null)
+  const loadRequestRef = useRef(0)
 
   const loadNotes = useCallback(async () => {
     if (!db) return
+    const requestId = ++loadRequestRef.current
     const rows = await db.query<Note>(
       'SELECT * FROM notes WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC'
     )
+    if (requestId !== loadRequestRef.current) return
     setNotes(rows)
   }, [db])
 
@@ -42,8 +45,11 @@ export default function TrashScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await loadNotes()
-    setRefreshing(false)
+    try {
+      await loadNotes()
+    } finally {
+      setRefreshing(false)
+    }
   }, [loadNotes])
 
   const handleRestore = useCallback(

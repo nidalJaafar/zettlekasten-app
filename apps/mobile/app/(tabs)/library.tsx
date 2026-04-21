@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -40,12 +40,15 @@ export default function LibraryScreen() {
   const [notes, setNotes] = useState<LibraryNote[]>([])
   const [search, setSearch] = useState('')
   const [refreshing, setRefreshing] = useState(false)
+  const loadRequestRef = useRef(0)
 
   const loadNotes = useCallback(async () => {
     if (!db) return
+    const requestId = ++loadRequestRef.current
     const rows = await db.query<LibraryNote>(
       `SELECT n.id, n.title, s.label as source_label, n.updated_at FROM notes n LEFT JOIN sources s ON n.source_id = s.id WHERE n.processed_at IS NOT NULL AND n.deleted_at IS NULL ORDER BY n.updated_at DESC`
     )
+    if (requestId !== loadRequestRef.current) return
     setNotes(rows)
   }, [db])
 
@@ -59,8 +62,11 @@ export default function LibraryScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await loadNotes()
-    setRefreshing(false)
+    try {
+      await loadNotes()
+    } finally {
+      setRefreshing(false)
+    }
   }, [loadNotes])
 
   const filtered = search.trim()
