@@ -50,6 +50,12 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: BG.base } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
+          name="workspace"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
           name="trash"
           options={{
             presentation: 'modal',
