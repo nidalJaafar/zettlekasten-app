@@ -82,7 +82,7 @@ export default function GraphScreen() {
     const full = await getNoteById(db, selectedNote.id)
     if (full) {
       setActiveNote(full)
-      router.navigate('/(tabs)/review')
+      router.navigate('/workspace')
     }
   }, [db, selectedNote, setActiveNote, router])
 
