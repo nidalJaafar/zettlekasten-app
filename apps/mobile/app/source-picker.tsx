@@ -19,7 +19,7 @@ const SOURCE_TYPES: SourceType[] = ['book', 'article', 'video', 'podcast', 'conv
 
 export default function SourcePickerScreen() {
   const router = useRouter()
-  const { db, pendingSourceCallback } = useAppStore()
+  const { db, pendingSourceCallback, setPendingSourceCallback } = useAppStore()
 
   const [sources, setSources] = useState<Source[]>([])
   const [search, setSearch] = useState('')
@@ -40,6 +40,12 @@ export default function SourcePickerScreen() {
     setCreating(false)
   }, [loadSources])
 
+  useEffect(() => {
+    return () => {
+      setPendingSourceCallback(null)
+    }
+  }, [setPendingSourceCallback])
+
   const filtered = search.trim()
     ? sources.filter((s) => s.label.toLowerCase().includes(search.toLowerCase()))
     : sources
@@ -47,9 +53,10 @@ export default function SourcePickerScreen() {
   const handleSelect = useCallback(
     (id: string) => {
       pendingSourceCallback?.(id)
+      setPendingSourceCallback(null)
       router.back()
     },
-    [pendingSourceCallback, router]
+    [pendingSourceCallback, setPendingSourceCallback, router]
   )
 
   const handleCreate = useCallback(async () => {

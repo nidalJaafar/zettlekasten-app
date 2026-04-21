@@ -115,6 +115,8 @@ export default function ReviewScreen() {
 
     let cancelled = false
 
+    setSource(null)
+
     getSourceById(db, sourceId).then((nextSource) => {
       if (!cancelled) {
         setSource(nextSource)
