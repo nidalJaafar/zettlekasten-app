@@ -24,6 +24,7 @@ import {
 } from '@zettelkasten/core'
 import {
   consumeReviewDraft,
+  mergeLinkedIdsIntoReviewDraft,
   promoteFleetingToLiterature,
   saveLiteratureAsPermanent,
   savePersistedNote,
@@ -247,7 +248,9 @@ export default function ReviewScreen() {
     setPendingReviewDraft(draft)
     setPendingLinkCallback((ids) => {
       setLinkedIds(ids)
-      setPendingReviewDraft({ ...draft, linkedIds: ids })
+      const currentDraft = useAppStore.getState().pendingReviewDraft
+      const baseDraft = currentDraft?.noteId === draft.noteId ? currentDraft : draft
+      setPendingReviewDraft(mergeLinkedIdsIntoReviewDraft(baseDraft, ids))
     })
     router.push('/link-picker')
   }, [activeNote, title, content, sourceId, ownWords, linkedIds, setPendingLinkCallback, setPendingReviewDraft, router])

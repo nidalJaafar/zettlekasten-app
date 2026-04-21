@@ -63,6 +63,14 @@ export function getInitialLinkPickerSelection(draft: ReviewDraft | null): string
   return draft?.linkedIds ?? []
 }
 
+export function mergeLinkedIdsIntoReviewDraft(draft: ReviewDraft, linkedIds: string[]): ReviewDraft {
+  return {
+    ...draft,
+    linkedIds,
+    roundTripComplete: draft.roundTripComplete,
+  }
+}
+
 type TransactionalDatabase = Database & {
   transaction<T>(work: (db: Database) => Promise<T>): Promise<T>
 }
