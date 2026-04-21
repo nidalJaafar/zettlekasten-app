@@ -289,7 +289,7 @@ export default function ReviewScreen() {
             </Pressable>
             <Text style={styles.headerTitle}>Review</Text>
           </View>
-          <Text style={styles.emptyMessage}>Select a note from Inbox or create a new one</Text>
+          <Text style={styles.emptyMessage}>Select a note from Inbox to start Review</Text>
         </View>
       </SafeAreaView>
     )
@@ -312,7 +312,7 @@ export default function ReviewScreen() {
           <Pressable onPress={() => router.navigate('/(tabs)')} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
             <Text style={styles.backText}>Back</Text>
           </Pressable>
-          <Text style={styles.headerTitle}>{title || 'Review'}</Text>
+          <Text style={styles.headerTitle}>Review</Text>
         </View>
         <View style={styles.typeBar}>
         <View style={[styles.typeBadge, { borderColor: color }]}>
@@ -326,6 +326,7 @@ export default function ReviewScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[glassStyle.card, styles.editorCard]}>
+          <Text style={styles.noteTitleLabel}>{title || 'Untitled'}</Text>
           <TextInput
             style={styles.titleInput}
             value={title}
@@ -494,6 +495,7 @@ const styles = StyleSheet.create({
     color: TEXT.muted,
     fontFamily: FONT.ui,
     fontSize: 14,
+    textAlign: 'center',
   },
   typeBar: {
     paddingHorizontal: 16,
@@ -519,6 +521,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 60,
+  },
+  noteTitleLabel: {
+    color: TEXT.secondary,
+    fontFamily: FONT.ui,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 10,
   },
   editorCard: {
     padding: 14,
