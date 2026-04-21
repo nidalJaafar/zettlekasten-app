@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, TextInput, Pressable, StyleSheet, FlatList } from 'react-native'
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native'
 import { getActiveWikilinkQuery, insertWikilinkSelection } from '@zettelkasten/core'
 import { BG, TEXT, FONT, BORDER, ACCENT, glassStyle } from '../theme'
 
@@ -142,31 +142,25 @@ export default function MarkdownInput({ value, onChange, placeholder, wikilinkOp
           />
           {autocompleteItems.length > 0 && (
             <View style={styles.autocompleteContainer}>
-              <FlatList
-                data={autocompleteItems}
-                keyExtractor={(item) => item.id}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => (
-                  <Pressable
-                    onPress={() => handleAutocompleteSelect(item.title)}
-                    style={({ pressed }) => [styles.autocompleteItem, pressed && styles.pressed]}
-                  >
-                    <Text style={styles.autocompleteText}>{item.title}</Text>
-                  </Pressable>
-                )}
-                ListFooterComponent={
-                  activeQueryRef.current?.query.trim() && onCreateWikilinkNote ? (
-                    <Pressable
-                      onPress={handleCreateWikilink}
-                      style={({ pressed }) => [styles.autocompleteItem, pressed && styles.pressed]}
-                    >
-                      <Text style={[styles.autocompleteText, { color: ACCENT.ink }]}>
-                        Create "{activeQueryRef.current.query.trim()}"
-                      </Text>
-                    </Pressable>
-                  ) : null
-                }
-              />
+              {autocompleteItems.map((item) => (
+                <Pressable
+                  key={item.id}
+                  onPress={() => handleAutocompleteSelect(item.title)}
+                  style={({ pressed }) => [styles.autocompleteItem, pressed && styles.pressed]}
+                >
+                  <Text style={styles.autocompleteText}>{item.title}</Text>
+                </Pressable>
+              ))}
+              {activeQueryRef.current?.query.trim() && onCreateWikilinkNote ? (
+                <Pressable
+                  onPress={handleCreateWikilink}
+                  style={({ pressed }) => [styles.autocompleteItem, pressed && styles.pressed]}
+                >
+                  <Text style={[styles.autocompleteText, { color: ACCENT.ink }]}>
+                    Create "{activeQueryRef.current.query.trim()}"
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           )}
         </View>
