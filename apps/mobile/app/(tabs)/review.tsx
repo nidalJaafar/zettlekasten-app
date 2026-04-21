@@ -18,6 +18,7 @@ import {
   countNotesByType,
   softDeleteNote,
   getSourceById,
+  getLinkedNoteIds,
   type Note,
   type Source,
 } from '@zettelkasten/core'
@@ -25,7 +26,6 @@ import {
   promoteFleetingToLiterature,
   saveLiteratureAsPermanent,
   savePersistedNote,
-  syncWikilinksToLinks,
 } from '../../src/lib/note-workflow'
 import { useAppStore } from '../../src/store'
 import { BG, TEXT, FONT, BORDER, ACCENT, typeColor, glassStyle } from '../../src/theme'
@@ -72,12 +72,44 @@ export default function ReviewScreen() {
 
   useEffect(() => {
     if (!db || !activeNote) return
-    if (!activeNote.source_id) {
+
+    if (!sourceId) {
       setSource(null)
       return
     }
-    getSourceById(db, activeNote.source_id).then(setSource)
+
+    let cancelled = false
+
+    getSourceById(db, sourceId).then((nextSource) => {
+      if (!cancelled) {
+        setSource(nextSource)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
   }, [db, activeNote, sourceId])
+
+  useEffect(() => {
+    if (!db || !activeNote) return
+    if (activeNote.type === 'fleeting') {
+      setLinkedIds([])
+      return
+    }
+
+    let cancelled = false
+
+    getLinkedNoteIds(db, activeNote.id).then((ids) => {
+      if (!cancelled) {
+        setLinkedIds(ids)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [db, activeNote])
 
   useEffect(() => {
     if (!db) return
@@ -99,7 +131,6 @@ export default function ReviewScreen() {
       if (snap.title === title && snap.content === content) return
       try {
         await savePersistedNote(db, activeNote, { title, content })
-        await syncWikilinksToLinks(db, activeNote.id, content)
         snapshotRef.current = { title, content }
       } catch (err) {
         if (err instanceof Error) {
