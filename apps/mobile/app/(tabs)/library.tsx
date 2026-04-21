@@ -36,7 +36,7 @@ function relativeTime(timestamp: number): string {
 
 export default function LibraryScreen() {
   const router = useRouter()
-  const { db, setActiveNote } = useAppStore()
+  const { db, setActiveNote, setWorkspaceOrigin } = useAppStore()
   const [notes, setNotes] = useState<LibraryNote[]>([])
   const [search, setSearch] = useState('')
   const [refreshing, setRefreshing] = useState(false)
@@ -79,10 +79,11 @@ export default function LibraryScreen() {
       const full = await getNoteById(db, note.id)
       if (full) {
         setActiveNote(full)
+        setWorkspaceOrigin('/(tabs)/library')
         router.navigate('/workspace')
       }
     },
-    [db, setActiveNote, router]
+    [db, setActiveNote, setWorkspaceOrigin, router]
   )
 
   return (

@@ -9,7 +9,7 @@ import { BG, TEXT, FONT, BORDER, typeColor, glassStyle } from '../../src/theme'
 
 export default function ReviewScreen() {
   const router = useRouter()
-  const { db, setActiveNote } = useAppStore()
+  const { db, setActiveNote, setWorkspaceOrigin } = useAppStore()
   const [notes, setNotes] = useState<Note[]>([])
   const [refreshing, setRefreshing] = useState(false)
 
@@ -46,9 +46,10 @@ export default function ReviewScreen() {
   const handlePress = useCallback(
     (note: Note) => {
       setActiveNote(note)
+      setWorkspaceOrigin('/(tabs)/review')
       router.navigate('/workspace')
     },
-    [setActiveNote, router]
+    [setActiveNote, setWorkspaceOrigin, router]
   )
 
   const handleCreate = useCallback(
@@ -60,9 +61,10 @@ export default function ReviewScreen() {
 
       const note = await createNote(db, { type, title: 'Untitled', content: '' })
       setActiveNote(note)
+      setWorkspaceOrigin('/(tabs)/review')
       router.navigate('/workspace')
     },
-    [db, setActiveNote, router]
+    [db, setActiveNote, setWorkspaceOrigin, router]
   )
 
   return (

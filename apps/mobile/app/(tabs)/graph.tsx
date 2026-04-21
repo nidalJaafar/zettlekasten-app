@@ -11,7 +11,7 @@ import GraphCanvas from '../../src/components/GraphCanvas'
 
 export default function GraphScreen() {
   const router = useRouter()
-  const { db, setActiveNote } = useAppStore()
+  const { db, setActiveNote, setWorkspaceOrigin } = useAppStore()
   const [notes, setNotes] = useState<Note[]>([])
   const [links, setLinks] = useState<NoteLink[]>([])
   const [search, setSearch] = useState('')
@@ -82,9 +82,10 @@ export default function GraphScreen() {
     const full = await getNoteById(db, selectedNote.id)
     if (full) {
       setActiveNote(full)
+      setWorkspaceOrigin('/(tabs)/graph')
       router.navigate('/workspace')
     }
-  }, [db, selectedNote, setActiveNote, router])
+  }, [db, selectedNote, setActiveNote, setWorkspaceOrigin, router])
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.canvas }}>

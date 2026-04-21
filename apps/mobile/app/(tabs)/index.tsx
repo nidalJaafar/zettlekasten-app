@@ -22,7 +22,7 @@ import NoteCard from '../../src/components/NoteCard'
 
 export default function InboxScreen() {
   const router = useRouter()
-  const { db, setActiveNote } = useAppStore()
+  const { db, setActiveNote, setWorkspaceOrigin } = useAppStore()
   const [notes, setNotes] = useState<Note[]>([])
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -82,17 +82,19 @@ export default function InboxScreen() {
   const handleNotePress = useCallback(
     (note: Note) => {
       setActiveNote(note)
+      setWorkspaceOrigin('/(tabs)')
       router.navigate('/workspace')
     },
-    [setActiveNote, router]
+    [setActiveNote, setWorkspaceOrigin, router]
   )
 
   const handleProcess = useCallback(
     (note: Note) => {
       setActiveNote(note)
+      setWorkspaceOrigin('/(tabs)')
       router.navigate('/workspace')
     },
-    [setActiveNote, router]
+    [setActiveNote, setWorkspaceOrigin, router]
   )
 
   const showActionMenu = useCallback(() => {
@@ -103,6 +105,7 @@ export default function InboxScreen() {
           if (!db) return
           const note = await createNote(db, { type: 'literature', title: 'Untitled', content: '' })
           setActiveNote(note)
+          setWorkspaceOrigin('/(tabs)')
           router.navigate('/workspace')
         },
       },
@@ -112,12 +115,13 @@ export default function InboxScreen() {
           if (!db) return
           const note = await createNote(db, { type: 'permanent', title: 'Untitled', content: '' })
           setActiveNote(note)
+          setWorkspaceOrigin('/(tabs)')
           router.navigate('/workspace')
         },
       },
       { text: 'Cancel', style: 'cancel' },
     ])
-  }, [setActiveNote, router])
+  }, [db, setActiveNote, setWorkspaceOrigin, router])
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.base }}>
