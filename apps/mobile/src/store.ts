@@ -9,10 +9,12 @@ interface AppState {
   db: Database | null
   activeNote: Note | null
   workspaceOrigin: WorkspaceOrigin
+  pendingReviewHandoff: boolean
   initialized: boolean
   initDb: () => Promise<void>
   setActiveNote: (note: Note | null) => void
   setWorkspaceOrigin: (origin: WorkspaceOrigin) => void
+  setPendingReviewHandoff: (pending: boolean) => void
   pendingSourceCallback: ((id: string | null) => void) | null
   setPendingSourceCallback: (cb: ((id: string | null) => void) | null) => void
   pendingLinkCallback: ((ids: string[]) => void) | null
@@ -25,6 +27,7 @@ export const useAppStore = create<AppState>((set) => ({
   db: null,
   activeNote: null,
   workspaceOrigin: '/(tabs)',
+  pendingReviewHandoff: false,
   initialized: false,
   initDb: async () => {
     const db = await getDb()
@@ -32,6 +35,7 @@ export const useAppStore = create<AppState>((set) => ({
   },
   setActiveNote: (note) => set({ activeNote: note }),
   setWorkspaceOrigin: (origin) => set({ workspaceOrigin: origin }),
+  setPendingReviewHandoff: (pending) => set({ pendingReviewHandoff: pending }),
   pendingSourceCallback: null,
   setPendingSourceCallback: (cb) => set({ pendingSourceCallback: cb }),
   pendingLinkCallback: null,

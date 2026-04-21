@@ -9,7 +9,7 @@ import { BG, TEXT, FONT, BORDER, typeColor, glassStyle } from '../../src/theme'
 
 export default function ReviewScreen() {
   const router = useRouter()
-  const { db, setActiveNote, setWorkspaceOrigin } = useAppStore()
+  const { db, activeNote, pendingReviewHandoff, setPendingReviewHandoff, setActiveNote, setWorkspaceOrigin } = useAppStore()
   const [notes, setNotes] = useState<Note[]>([])
   const [refreshing, setRefreshing] = useState(false)
 
@@ -31,8 +31,14 @@ export default function ReviewScreen() {
   }, [loadNotes])
 
   useFocusEffect(useCallback(() => {
+    if (pendingReviewHandoff && activeNote) {
+      setPendingReviewHandoff(false)
+      router.navigate('/workspace')
+      return
+    }
+
     loadNotes()
-  }, [loadNotes]))
+  }, [activeNote, pendingReviewHandoff, setPendingReviewHandoff, loadNotes, router]))
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)

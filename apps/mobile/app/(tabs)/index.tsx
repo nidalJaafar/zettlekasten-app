@@ -22,7 +22,7 @@ import NoteCard from '../../src/components/NoteCard'
 
 export default function InboxScreen() {
   const router = useRouter()
-  const { db, setActiveNote, setWorkspaceOrigin } = useAppStore()
+  const { db, setActiveNote, setWorkspaceOrigin, setPendingReviewHandoff } = useAppStore()
   const [notes, setNotes] = useState<Note[]>([])
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -92,9 +92,10 @@ export default function InboxScreen() {
     (note: Note) => {
       setActiveNote(note)
       setWorkspaceOrigin('/(tabs)/review')
+      setPendingReviewHandoff(true)
       router.navigate('/(tabs)/review')
     },
-    [setActiveNote, setWorkspaceOrigin, router]
+    [setActiveNote, setWorkspaceOrigin, setPendingReviewHandoff, router]
   )
 
   const showActionMenu = useCallback(() => {
