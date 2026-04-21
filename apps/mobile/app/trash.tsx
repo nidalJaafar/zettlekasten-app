@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { View, Text, FlatList, Alert, StyleSheet, RefreshControl } from 'react-native'
 import { Swipeable } from 'react-native-gesture-handler'
+import { useFocusEffect } from '@react-navigation/native'
 import { restoreNote, permanentlyDeleteNote, type Note } from '@zettelkasten/core'
 import { useAppStore } from '../src/store'
 import { BG, TEXT, FONT, BORDER, ACCENT, typeColor, glassStyle } from '../src/theme'
@@ -34,6 +35,10 @@ export default function TrashScreen() {
   useEffect(() => {
     loadNotes()
   }, [loadNotes])
+
+  useFocusEffect(useCallback(() => {
+    loadNotes()
+  }, [loadNotes]))
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)

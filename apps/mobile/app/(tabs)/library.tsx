@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 import { getNoteById } from '@zettelkasten/core'
 import { useAppStore } from '../../src/store'
 import { BG, TEXT, FONT, BORDER, glassStyle } from '../../src/theme'
@@ -51,6 +52,10 @@ export default function LibraryScreen() {
   useEffect(() => {
     loadNotes()
   }, [loadNotes])
+
+  useFocusEffect(useCallback(() => {
+    loadNotes()
+  }, [loadNotes]))
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)

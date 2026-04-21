@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react'
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 import { getNotesByType, getAllLinks, getNoteById } from '@zettelkasten/core'
 import type { Note, NoteLink } from '@zettelkasten/core'
 import { useAppStore } from '../../src/store'
@@ -29,6 +30,10 @@ export default function GraphScreen() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  useFocusEffect(useCallback(() => {
+    loadData()
+  }, [loadData]))
 
   const graphNodes = useMemo(
     () => notes.map((n) => ({ id: n.id, title: n.title, type: n.type })),

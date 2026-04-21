@@ -13,11 +13,26 @@ export default function NoteScreen() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!db || !id) return
+    let cancelled = false
+
+    if (!db || !id) {
+      setNote(null)
+      setLoading(false)
+      return () => {
+        cancelled = true
+      }
+    }
+
+    setLoading(true)
     getNoteById(db, id).then((n) => {
+      if (cancelled) return
       setNote(n ?? null)
       setLoading(false)
     })
+
+    return () => {
+      cancelled = true
+    }
   }, [db, id])
 
   if (loading) {
