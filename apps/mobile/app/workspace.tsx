@@ -287,9 +287,9 @@ export default function WorkspaceScreen() {
             <Pressable onPress={() => router.navigate(workspaceOrigin)} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
               <Text style={styles.backText}>Back</Text>
             </Pressable>
-            <Text style={styles.headerTitle}>Review</Text>
+            <Text style={styles.headerTitle}>Workspace</Text>
           </View>
-          <Text style={styles.emptyMessage}>Select a note from Inbox to start Review</Text>
+          <Text style={styles.emptyMessage}>Select a note to open Workspace</Text>
         </View>
       </SafeAreaView>
     )
@@ -312,7 +312,7 @@ export default function WorkspaceScreen() {
           <Pressable onPress={() => router.navigate(workspaceOrigin)} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
             <Text style={styles.backText}>Back</Text>
           </Pressable>
-          <Text style={styles.headerTitle}>Review</Text>
+          <Text style={styles.headerTitle}>Workspace</Text>
         </View>
         <View style={styles.typeBar}>
           <View style={[styles.typeBadge, { borderColor: color }]}>
