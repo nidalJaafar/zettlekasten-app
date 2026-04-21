@@ -7,26 +7,27 @@ export default function TabLayout() {
       blurEffect="systemMaterialDark"
       backgroundColor={BG.panel}
       tintColor={TEXT.primary}
+      iconColor={{ default: TEXT.muted, selected: TEXT.secondary }}
       labelStyle={{
         default: { color: TEXT.muted, fontFamily: FONT.ui, fontSize: 11, fontWeight: '500' },
-        selected: { color: TEXT.primary, fontFamily: FONT.ui, fontSize: 11, fontWeight: '600' },
+        selected: { color: TEXT.muted, fontFamily: FONT.ui, fontSize: 11, fontWeight: '500' },
       }}
     >
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Icon sf={{ default: 'tray', selected: 'tray.fill' }} md="inbox" />
-        <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label selectedStyle={{ color: 'transparent' }}>Inbox</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="review">
         <NativeTabs.Trigger.Icon sf={{ default: 'square', selected: 'square.and.pencil' }} md="edit_note" />
-        <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label selectedStyle={{ color: 'transparent' }}>Review</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="library">
         <NativeTabs.Trigger.Icon sf={{ default: 'books.vertical', selected: 'books.vertical.fill' }} md="library_books" />
-        <NativeTabs.Trigger.Label>Library</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label selectedStyle={{ color: 'transparent' }}>Library</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="graph">
         <NativeTabs.Trigger.Icon sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }} md="analytics" />
-        <NativeTabs.Trigger.Label>Graph</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label selectedStyle={{ color: 'transparent' }}>Graph</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   )
