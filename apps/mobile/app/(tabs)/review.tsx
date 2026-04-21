@@ -326,7 +326,6 @@ export default function ReviewScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[glassStyle.card, styles.editorCard]}>
-          <Text style={styles.noteTitleLabel}>{title || 'Untitled'}</Text>
           <TextInput
             style={styles.titleInput}
             value={title}
@@ -521,13 +520,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 60,
-  },
-  noteTitleLabel: {
-    color: TEXT.secondary,
-    fontFamily: FONT.ui,
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 10,
   },
   editorCard: {
     padding: 14,
