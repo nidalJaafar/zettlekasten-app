@@ -91,8 +91,8 @@ export default function InboxScreen() {
   const handleProcess = useCallback(
     (note: Note) => {
       setActiveNote(note)
-      setWorkspaceOrigin('/(tabs)')
-      router.navigate('/workspace')
+      setWorkspaceOrigin('/(tabs)/review')
+      router.navigate('/(tabs)/review')
     },
     [setActiveNote, setWorkspaceOrigin, router]
   )
