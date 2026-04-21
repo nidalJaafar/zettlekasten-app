@@ -23,6 +23,7 @@ import {
   type Source,
 } from '@zettelkasten/core'
 import {
+  getInitialReviewState,
   promoteFleetingToLiterature,
   saveLiteratureAsPermanent,
   savePersistedNote,
@@ -33,7 +34,15 @@ import MarkdownInput from '../../src/components/MarkdownInput'
 
 export default function ReviewScreen() {
   const router = useRouter()
-  const { db, activeNote, setActiveNote, setPendingSourceCallback, setPendingLinkCallback } = useAppStore()
+  const {
+    db,
+    activeNote,
+    setActiveNote,
+    setPendingSourceCallback,
+    setPendingLinkCallback,
+    pendingReviewDraft,
+    setPendingReviewDraft,
+  } = useAppStore()
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -61,14 +70,19 @@ export default function ReviewScreen() {
     }
     if (initializedRef.current === activeNote.id) return
     initializedRef.current = activeNote.id
-    setTitle(activeNote.title)
-    setContent(activeNote.content)
-    setSourceId(activeNote.source_id)
-    setOwnWords(activeNote.own_words_confirmed === 1)
-    setLinkedIds([])
+    const initialState = getInitialReviewState(activeNote, pendingReviewDraft)
+    setTitle(initialState.title)
+    setContent(initialState.content)
+    setSourceId(initialState.sourceId)
+    setOwnWords(initialState.ownWords)
+    setLinkedIds(initialState.linkedIds)
     setSource(null)
-    snapshotRef.current = { title: activeNote.title, content: activeNote.content, sourceId: activeNote.source_id }
-  }, [activeNote])
+    snapshotRef.current = {
+      title: initialState.title,
+      content: initialState.content,
+      sourceId: initialState.sourceId,
+    }
+  }, [activeNote, pendingReviewDraft])
 
   useEffect(() => {
     if (!db || !activeNote) return
@@ -98,6 +112,11 @@ export default function ReviewScreen() {
       return
     }
 
+    if (pendingReviewDraft?.noteId === activeNote.id) {
+      setLinkedIds(pendingReviewDraft.linkedIds)
+      return
+    }
+
     let cancelled = false
 
     getLinkedNoteIds(db, activeNote.id).then((ids) => {
@@ -109,7 +128,7 @@ export default function ReviewScreen() {
     return () => {
       cancelled = true
     }
-  }, [db, activeNote])
+  }, [db, activeNote, pendingReviewDraft])
 
   useEffect(() => {
     if (!db) return
@@ -210,11 +229,24 @@ export default function ReviewScreen() {
   }, [setPendingSourceCallback, router])
 
   const openLinkPicker = useCallback(() => {
+    if (!activeNote) return
+
+    const draft = {
+      noteId: activeNote.id,
+      title,
+      content,
+      sourceId,
+      ownWords,
+      linkedIds,
+    }
+
+    setPendingReviewDraft(draft)
     setPendingLinkCallback((ids) => {
       setLinkedIds(ids)
+      setPendingReviewDraft({ ...draft, linkedIds: ids })
     })
     router.push('/link-picker')
-  }, [setPendingLinkCallback, router])
+  }, [activeNote, title, content, sourceId, ownWords, linkedIds, setPendingLinkCallback, setPendingReviewDraft, router])
 
   if (!activeNote || !db) {
     return (

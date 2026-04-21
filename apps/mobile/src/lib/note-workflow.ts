@@ -15,6 +15,33 @@ import { rewriteTitleBasedWikilinks } from '@zettelkasten/core'
 
 export { rewriteTitleBasedWikilinks }
 
+export type ReviewDraft = {
+  noteId: string
+  title: string
+  content: string
+  sourceId: string | null
+  ownWords: boolean
+  linkedIds: string[]
+}
+
+export function getInitialReviewState(note: Note, draft: ReviewDraft | null): {
+  title: string
+  content: string
+  sourceId: string | null
+  ownWords: boolean
+  linkedIds: string[]
+} {
+  const activeDraft = draft?.noteId === note.id ? draft : null
+
+  return {
+    title: activeDraft?.title ?? note.title,
+    content: activeDraft?.content ?? note.content,
+    sourceId: activeDraft?.sourceId ?? note.source_id,
+    ownWords: activeDraft?.ownWords ?? note.own_words_confirmed === 1,
+    linkedIds: activeDraft?.linkedIds ?? [],
+  }
+}
+
 type TransactionalDatabase = Database & {
   transaction<T>(work: (db: Database) => Promise<T>): Promise<T>
 }
