@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import CodeMirror from '@uiw/react-codemirror'
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import CodeMirrorBase, { type ReactCodeMirrorProps } from '@uiw/react-codemirror'
 import { markdown } from '@codemirror/lang-markdown'
 import { EditorView, type DecorationSet, type ViewUpdate, ViewPlugin, Decoration } from '@uiw/react-codemirror'
 import { RangeSetBuilder, Extension } from '@codemirror/state'
@@ -7,6 +7,8 @@ import { getWikilinkTarget, getWikilinkText, getActiveWikilinkQuery, insertWikil
 import { BG, BORDER, TEXT, FONT, ACCENT } from '../theme'
 
 const WIKILINK_RE = /\[\[([^\]]+)\]\]/g
+
+const CodeMirror = CodeMirrorBase as unknown as ComponentType<ReactCodeMirrorProps>
 
 export interface WikilinkOption {
   id: string
