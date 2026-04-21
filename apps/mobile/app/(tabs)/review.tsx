@@ -23,7 +23,7 @@ import {
   type Source,
 } from '@zettelkasten/core'
 import {
-  getInitialReviewState,
+  consumeReviewDraft,
   promoteFleetingToLiterature,
   saveLiteratureAsPermanent,
   savePersistedNote,
@@ -70,7 +70,7 @@ export default function ReviewScreen() {
     }
     if (initializedRef.current === activeNote.id) return
     initializedRef.current = activeNote.id
-    const initialState = getInitialReviewState(activeNote, pendingReviewDraft)
+    const { initialState, remainingDraft } = consumeReviewDraft(activeNote, pendingReviewDraft)
     setTitle(initialState.title)
     setContent(initialState.content)
     setSourceId(initialState.sourceId)
@@ -82,7 +82,10 @@ export default function ReviewScreen() {
       content: initialState.content,
       sourceId: initialState.sourceId,
     }
-  }, [activeNote, pendingReviewDraft])
+    if (remainingDraft !== pendingReviewDraft) {
+      setPendingReviewDraft(remainingDraft)
+    }
+  }, [activeNote, pendingReviewDraft, setPendingReviewDraft])
 
   useEffect(() => {
     if (!db || !activeNote) return
@@ -238,6 +241,7 @@ export default function ReviewScreen() {
       sourceId,
       ownWords,
       linkedIds,
+      roundTripComplete: false,
     }
 
     setPendingReviewDraft(draft)

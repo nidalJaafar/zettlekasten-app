@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { getInitialReviewState, type ReviewDraft } from '../../../mobile/src/lib/note-workflow'
+import {
+  consumeReviewDraft,
+  getInitialLinkPickerSelection,
+  getInitialReviewState,
+  type ReviewDraft,
+} from '../../../mobile/src/lib/note-workflow'
 import type { Note } from '@zettelkasten/core'
 
 function createNote(overrides: Partial<Note> = {}): Note {
@@ -28,6 +33,7 @@ describe('mobile review draft helpers', () => {
       sourceId: 'source-2',
       ownWords: true,
       linkedIds: ['perm-1', 'perm-2'],
+      roundTripComplete: false,
     }
 
     expect(getInitialReviewState(note, draft)).toEqual({
@@ -48,6 +54,7 @@ describe('mobile review draft helpers', () => {
       sourceId: 'source-2',
       ownWords: false,
       linkedIds: ['perm-1'],
+      roundTripComplete: false,
     }
 
     expect(getInitialReviewState(note, draft)).toEqual({
@@ -57,5 +64,41 @@ describe('mobile review draft helpers', () => {
       ownWords: true,
       linkedIds: [],
     })
+  })
+
+  it('clears a consumed draft for the active note', () => {
+    const note = createNote()
+    const draft: ReviewDraft = {
+      noteId: note.id,
+      title: 'Draft title',
+      content: 'Draft content',
+      sourceId: 'source-2',
+      ownWords: true,
+      linkedIds: ['perm-1'],
+      roundTripComplete: true,
+    }
+
+    expect(consumeReviewDraft(note, draft)).toEqual({
+      initialState: {
+        title: 'Draft title',
+        content: 'Draft content',
+        sourceId: 'source-2',
+        ownWords: true,
+        linkedIds: ['perm-1'],
+      },
+      remainingDraft: null,
+    })
+  })
+
+  it('seeds link picker selection from the pending draft', () => {
+    expect(getInitialLinkPickerSelection({
+      noteId: 'note-1',
+      title: 'Draft title',
+      content: 'Draft content',
+      sourceId: 'source-2',
+      ownWords: true,
+      linkedIds: ['perm-1', 'perm-2'],
+      roundTripComplete: false,
+    })).toEqual(['perm-1', 'perm-2'])
   })
 })

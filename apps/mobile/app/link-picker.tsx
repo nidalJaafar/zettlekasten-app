@@ -1,17 +1,19 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
 import { getNotesByType, type Note } from '@zettelkasten/core'
 import { useAppStore } from '../src/store'
+import { getInitialLinkPickerSelection } from '../src/lib/note-workflow'
 import { BG, TEXT, FONT, BORDER, ACCENT, glassStyle } from '../src/theme'
 
 export default function LinkPickerScreen() {
   const router = useRouter()
-  const { db, pendingLinkCallback } = useAppStore()
+  const { db, pendingLinkCallback, pendingReviewDraft, setPendingReviewDraft } = useAppStore()
 
   const [notes, setNotes] = useState<Note[]>([])
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [search, setSearch] = useState('')
+  const completedRef = useRef(false)
 
   const loadNotes = useCallback(async () => {
     if (!db) return
@@ -22,8 +24,15 @@ export default function LinkPickerScreen() {
   useEffect(() => {
     loadNotes()
     setSearch('')
-    setSelectedIds([])
-  }, [loadNotes])
+    setSelectedIds(getInitialLinkPickerSelection(pendingReviewDraft))
+  }, [loadNotes, pendingReviewDraft])
+
+  useEffect(() => {
+    return () => {
+      if (!pendingReviewDraft || completedRef.current) return
+      setPendingReviewDraft({ ...pendingReviewDraft, roundTripComplete: true })
+    }
+  }, [pendingReviewDraft, setPendingReviewDraft])
 
   const filtered = search.trim()
     ? notes.filter((n) => n.title.toLowerCase().includes(search.toLowerCase()))
@@ -45,9 +54,13 @@ export default function LinkPickerScreen() {
   )
 
   const handleDone = useCallback(() => {
+    completedRef.current = true
+    if (pendingReviewDraft) {
+      setPendingReviewDraft({ ...pendingReviewDraft, linkedIds: selectedIds, roundTripComplete: true })
+    }
     pendingLinkCallback?.(selectedIds)
     router.back()
-  }, [pendingLinkCallback, selectedIds, router])
+  }, [pendingLinkCallback, pendingReviewDraft, selectedIds, setPendingReviewDraft, router])
 
   return (
     <View style={styles.root}>

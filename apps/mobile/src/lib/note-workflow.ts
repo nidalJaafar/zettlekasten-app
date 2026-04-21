@@ -22,6 +22,11 @@ export type ReviewDraft = {
   sourceId: string | null
   ownWords: boolean
   linkedIds: string[]
+  roundTripComplete: boolean
+}
+
+function getActiveReviewDraft(note: Note, draft: ReviewDraft | null): ReviewDraft | null {
+  return draft?.noteId === note.id ? draft : null
 }
 
 export function getInitialReviewState(note: Note, draft: ReviewDraft | null): {
@@ -31,7 +36,7 @@ export function getInitialReviewState(note: Note, draft: ReviewDraft | null): {
   ownWords: boolean
   linkedIds: string[]
 } {
-  const activeDraft = draft?.noteId === note.id ? draft : null
+  const activeDraft = getActiveReviewDraft(note, draft)
 
   return {
     title: activeDraft?.title ?? note.title,
@@ -40,6 +45,22 @@ export function getInitialReviewState(note: Note, draft: ReviewDraft | null): {
     ownWords: activeDraft?.ownWords ?? note.own_words_confirmed === 1,
     linkedIds: activeDraft?.linkedIds ?? [],
   }
+}
+
+export function consumeReviewDraft(note: Note, draft: ReviewDraft | null): {
+  initialState: ReturnType<typeof getInitialReviewState>
+  remainingDraft: ReviewDraft | null
+} {
+  const activeDraft = getActiveReviewDraft(note, draft)
+
+  return {
+    initialState: getInitialReviewState(note, draft),
+    remainingDraft: activeDraft?.roundTripComplete ? null : draft,
+  }
+}
+
+export function getInitialLinkPickerSelection(draft: ReviewDraft | null): string[] {
+  return draft?.linkedIds ?? []
 }
 
 type TransactionalDatabase = Database & {
