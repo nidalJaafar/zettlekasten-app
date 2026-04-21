@@ -1,9 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
-import { getNotesByType, type Note } from '@zettelkasten/core'
+import { getInitialLinkPickerSelection, getNotesByType, type Note } from '@zettelkasten/core'
 import { useAppStore } from '../src/store'
-import { getInitialLinkPickerSelection } from '../src/lib/note-workflow'
 import { BG, TEXT, FONT, BORDER, ACCENT, glassStyle } from '../src/theme'
 
 export default function LinkPickerScreen() {

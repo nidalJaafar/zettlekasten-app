@@ -6,9 +6,9 @@ import {
   getInitialLinkPickerSelection,
   getInitialReviewState,
   mergeLinkedIdsIntoReviewDraft,
-  type Note,
   type ReviewDraft,
-} from '@zettelkasten/core'
+  type Note,
+} from '../src'
 
 function createNote(overrides: Partial<Note> = {}): Note {
   return {
@@ -26,7 +26,7 @@ function createNote(overrides: Partial<Note> = {}): Note {
   }
 }
 
-describe('mobile review draft helpers', () => {
+describe('review draft helpers', () => {
   it('prefers the pending draft for the active note', () => {
     const note = createNote()
     const draft: ReviewDraft = {
@@ -45,7 +45,7 @@ describe('mobile review draft helpers', () => {
       sourceId: 'source-2',
       ownWords: true,
       linkedIds: ['perm-1', 'perm-2'],
-    })
+})
   })
 
   it('falls back to persisted note values for a different draft note id', () => {

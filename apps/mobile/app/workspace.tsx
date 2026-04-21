@@ -14,18 +14,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import {
+  consumeCompletedReviewDraft,
+  consumeReviewDraft,
   getNotesByType,
   countNotesByType,
+  getCompletedReviewDraftLinkedIds,
   softDeleteNote,
   getSourceById,
   getLinkedNoteIds,
+  mergeLinkedIdsIntoReviewDraft,
   type Source,
 } from '@zettelkasten/core'
 import {
-  consumeCompletedReviewDraft,
-  consumeReviewDraft,
-  getCompletedReviewDraftLinkedIds,
-  mergeLinkedIdsIntoReviewDraft,
   promoteFleetingToLiterature,
   saveLiteratureAsPermanent,
   savePersistedNote,

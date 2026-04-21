@@ -1,7 +1,6 @@
 import { create } from 'zustand'
-import type { Database, Note } from '@zettelkasten/core'
+import type { Database, Note, ReviewDraft } from '@zettelkasten/core'
 import { getDb } from './db'
-import type { ReviewDraft } from './lib/note-workflow'
 
 export type WorkspaceOrigin = '/(tabs)' | '/(tabs)/review' | '/(tabs)/library' | '/(tabs)/graph'
 
