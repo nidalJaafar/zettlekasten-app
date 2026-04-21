@@ -242,7 +242,7 @@ export default function WorkspaceScreen() {
         onPress: async () => {
           await softDeleteNote(db, activeNote.id)
           setActiveNote(null)
-          router.navigate('/(tabs)')
+          router.navigate('/(tabs)/review')
         },
       },
     ])
@@ -283,7 +283,7 @@ export default function WorkspaceScreen() {
       <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.base }}>
         <View style={styles.emptyRoot}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.navigate('/(tabs)')} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
+            <Pressable onPress={() => router.navigate('/(tabs)/review')} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
               <Text style={styles.backText}>Back</Text>
             </Pressable>
             <Text style={styles.headerTitle}>Review</Text>
@@ -308,7 +308,7 @@ export default function WorkspaceScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Pressable onPress={() => router.navigate('/(tabs)')} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
+          <Pressable onPress={() => router.navigate('/(tabs)/review')} style={({ pressed }) => [glassStyle.pill, styles.backBtn, pressed && styles.pressed]}>
             <Text style={styles.backText}>Back</Text>
           </Pressable>
           <Text style={styles.headerTitle}>Review</Text>

@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from 'react'
-import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl } from 'react-native'
+import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
-import { getNotesByType, type Note } from '@zettelkasten/core'
+import { createNote, getNotesByType, type Note } from '@zettelkasten/core'
 import { useAppStore } from '../../src/store'
 import { BG, TEXT, FONT, BORDER, typeColor, glassStyle } from '../../src/theme'
 
@@ -51,11 +51,39 @@ export default function ReviewScreen() {
     [setActiveNote, router]
   )
 
+  const handleCreate = useCallback(
+    async (type: 'literature' | 'permanent') => {
+      if (!db) {
+        Alert.alert('Review', 'Database is still loading.')
+        return
+      }
+
+      const note = await createNote(db, { type, title: 'Untitled', content: '' })
+      setActiveNote(note)
+      router.navigate('/workspace')
+    },
+    [db, setActiveNote, router]
+  )
+
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: BG.base }}>
       <View style={styles.root}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Review</Text>
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={() => void handleCreate('literature')}
+              style={({ pressed }) => [glassStyle.pill, styles.headerActionBtn, pressed && styles.cardPressed]}
+            >
+              <Text style={styles.headerActionText}>New Literature</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => void handleCreate('permanent')}
+              style={({ pressed }) => [glassStyle.pill, styles.headerActionBtn, pressed && styles.cardPressed]}
+            >
+              <Text style={styles.headerActionText}>New Permanent</Text>
+            </Pressable>
+          </View>
         </View>
 
         <FlatList
@@ -119,12 +147,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
+    gap: 12,
   },
   headerTitle: {
     color: TEXT.primary,
     fontFamily: FONT.ui,
     fontSize: 22,
     fontWeight: '700',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerActionBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  headerActionText: {
+    color: TEXT.secondary,
+    fontFamily: FONT.ui,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   list: {
     paddingHorizontal: 16,
