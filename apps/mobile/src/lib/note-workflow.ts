@@ -51,12 +51,15 @@ export function consumeReviewDraft(note: Note, draft: ReviewDraft | null): {
   initialState: ReturnType<typeof getInitialReviewState>
   remainingDraft: ReviewDraft | null
 } {
-  const activeDraft = getActiveReviewDraft(note, draft)
-
   return {
     initialState: getInitialReviewState(note, draft),
-    remainingDraft: activeDraft?.roundTripComplete ? null : draft,
+    remainingDraft: consumeCompletedReviewDraft(note, draft),
   }
+}
+
+export function consumeCompletedReviewDraft(note: Note, draft: ReviewDraft | null): ReviewDraft | null {
+  const activeDraft = getActiveReviewDraft(note, draft)
+  return activeDraft?.roundTripComplete ? null : draft
 }
 
 export function getInitialLinkPickerSelection(draft: ReviewDraft | null): string[] {

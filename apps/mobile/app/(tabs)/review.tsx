@@ -23,6 +23,7 @@ import {
   type Source,
 } from '@zettelkasten/core'
 import {
+  consumeCompletedReviewDraft,
   consumeReviewDraft,
   mergeLinkedIdsIntoReviewDraft,
   promoteFleetingToLiterature,
@@ -83,6 +84,15 @@ export default function ReviewScreen() {
       content: initialState.content,
       sourceId: initialState.sourceId,
     }
+    if (remainingDraft !== pendingReviewDraft) {
+      setPendingReviewDraft(remainingDraft)
+    }
+  }, [activeNote, pendingReviewDraft, setPendingReviewDraft])
+
+  useEffect(() => {
+    if (!activeNote || !pendingReviewDraft) return
+
+    const remainingDraft = consumeCompletedReviewDraft(activeNote, pendingReviewDraft)
     if (remainingDraft !== pendingReviewDraft) {
       setPendingReviewDraft(remainingDraft)
     }

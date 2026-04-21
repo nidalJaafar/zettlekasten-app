@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  consumeCompletedReviewDraft,
   consumeReviewDraft,
   getInitialLinkPickerSelection,
   getInitialReviewState,
@@ -119,5 +120,20 @@ describe('mobile review draft helpers', () => {
       linkedIds: ['perm-2'],
       roundTripComplete: true,
     })
+  })
+
+  it('clears a completed draft for the same active note outside initial hydration', () => {
+    const note = createNote()
+    const draft: ReviewDraft = {
+      noteId: note.id,
+      title: 'Draft title',
+      content: 'Draft content',
+      sourceId: 'source-2',
+      ownWords: true,
+      linkedIds: ['perm-1'],
+      roundTripComplete: true,
+    }
+
+    expect(consumeCompletedReviewDraft(note, draft)).toBeNull()
   })
 })
