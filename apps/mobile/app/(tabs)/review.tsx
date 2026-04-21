@@ -106,7 +106,7 @@ export default function ReviewScreen() {
   }, [activeNote, pendingReviewDraft, setPendingReviewDraft])
 
   useEffect(() => {
-    if (!db || !activeNote) return
+    if (!db) return
 
     if (!sourceId) {
       setSource(null)
@@ -126,7 +126,7 @@ export default function ReviewScreen() {
     return () => {
       cancelled = true
     }
-  }, [db, activeNote, sourceId])
+  }, [db, sourceId])
 
   useEffect(() => {
     if (!db || !activeNote) return
